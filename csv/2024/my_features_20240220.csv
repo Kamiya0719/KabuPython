@@ -1,0 +1,8 @@
+code,company_name,title,pubdate,fiscal_period,consolidated,revenue,gross_profit,operating_income,ordinary_income,net_income_parent,eps,total_assets,shareholders_equity,cash_and_equivalents,interest_bearing_debt,operating_cf,investing_cf,financing_cf,roe,roa
+72140,ＧＭＢ,（訂正・数値データ訂正）「2024年３月期第３四半期決算短信〔日本基準〕（連結）」の一部訂正について,2024-02-20 16:30:00,"DurationPeriod(start_date=datetime.date(2022, 4, 1), end_date=datetime.date(2022, 12, 31))",True,71193294000,12616777000,1758036000,1773900000,802000000,151.5,88128000000,23083000000,5587089000,,-491611000,-3496228000,3157512000,,
+78160,スノーピーク,2023年12月期の剰余金の配当の変更（無配）及び2024年12月期の配当予想の修正（無配）並びに株主優待制度の廃止に関するお知らせ,2024-02-20 16:00:00,,True,,,,,,,,,,,,,,,
+17680,ソネック,業績予想の修正に関するお知らせ,2024-02-20 15:30:00,"DurationPeriod(start_date=datetime.date(2023, 4, 1), end_date=datetime.date(2024, 3, 31))",True,18039000000,,940000000,1003000000,,94.29,,,,,,,,,
+65030,三菱電,2024年3月期 配当予想（期末配当金）の修正について,2024-02-20 15:30:00,,True,,,,,,,,,,,,,,,
+72130,レシップＨＤ,連結業績予想並びに配当予想の修正（増配）及び特別利益の計上見込みに関するお知らせ,2024-02-20 15:30:00,"DurationPeriod(start_date=datetime.date(2023, 4, 1), end_date=datetime.date(2024, 3, 31))",True,14253000000,,-310000000,-207000000,-249000000,-19.19,,,,,,,,,
+24330,博報堂ＤＹ,（数値データ追加）「投資有価証券売却益（特別利益）の計上及び業績予想の修正に関するお知らせ」におけるXBRLデータ追加について,2024-02-20 14:30:00,"DurationPeriod(start_date=datetime.date(2023, 4, 1), end_date=datetime.date(2024, 3, 31))",True,991137000000,,55409000000,60378000000,31010000000,83.16,,,,,,,,,
+27950,プリメックス,配当予想の修正に関するお知らせ,2024-02-20 08:00:00,,True,,,,,,,,,,,,,,,
