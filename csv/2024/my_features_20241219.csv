@@ -1,0 +1,8 @@
+code,company_name,title,pubdate,fiscal_period,consolidated,revenue,gross_profit,operating_income,ordinary_income,net_income_parent,eps,total_assets,shareholders_equity,cash_and_equivalents,interest_bearing_debt,operating_cf,investing_cf,financing_cf,roe,roa
+45720,Ｇ－カルナバイオ,業績予想の修正に関するお知らせ,2024-12-19 16:30:00,"DurationPeriod(start_date=datetime.date(2024, 1, 1), end_date=datetime.date(2024, 12, 31))",True,1625000000,,-1116000000,-1126000000,-1152000000,-68.62,,,,,,,,,
+19380,日リーテック,配当予想の修正（増配）に関するお知らせ,2024-12-19 16:00:00,,True,,,,,,,,,,,,,,,
+29790,Ｒ－ＳＯＳｉＬＡ物流,2025年5月期の運用状況及び分配金の予想の修正に関するお知らせ,2024-12-19 16:00:00,,True,4731000000,,,,,,,,,,,,,,
+36230,Ｇ－ＢＳ,業績予想及び配当予想の修正に関するお知らせ,2024-12-19 15:30:00,"DurationPeriod(start_date=datetime.date(2024, 1, 1), end_date=datetime.date(2024, 12, 31))",True,3782000000,,466000000,464000000,300000000,47.71,,,,,,,,,
+47760,ＣＹＢＯＺＵ,配当予想の修正および次期業績予想に関するお知らせ,2024-12-19 15:30:00,,True,,,,,,,,,,,,,,,
+39430,大石産業,配当方針の変更および期末配当予想の修正（創業 100 周年記念配当）に関するお知らせ,2024-12-19 14:00:00,,True,,,,,,,,,,,,,,,
+29750,スター・マイカＨＤ,通期連結業績予想の修正に関するお知らせ,2024-12-19 12:00:00,"DurationPeriod(start_date=datetime.date(2023, 12, 1), end_date=datetime.date(2024, 11, 30))",True,48877000000,,4846000000,3921000000,2664000000,79.59,,,,,,,,,

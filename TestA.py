@@ -6,6 +6,8 @@ from pathlib import Path
 
 import tdnet
 import pandas as pd
+import fitz
+from janome.tokenizer import Tokenizer
 from tdnet import CK, extract_values, extracted_to_dict
 
 # ----------------------------------------
@@ -36,7 +38,7 @@ def extract_xbrl_features(filing, log_root: Path | None = None):
     try:
         stmts = retry_on_404(
             filing.xbrl,
-            retries=3,
+            retries=1,
             wait_seconds=1.0,
             log_root=log_root,
             description=f"filing.xbrl for {filing.company_code} {filing.title}",
@@ -58,7 +60,7 @@ def extract_xbrl_features(filing, log_root: Path | None = None):
         try:
             fs = getter()
         except Exception:
-            continue
+            raise
         if fs is None:
             continue
         if period is None and getattr(fs, "period", None) is not None:
@@ -87,7 +89,8 @@ def extract_xbrl_features(filing, log_root: Path | None = None):
         fin = extracted_to_dict(fin)
     except Exception as e:
         print(f"[EXTRACT ERROR] {filing.company_code}: {e}")
-        fin = {}
+        raise
+
 
     # 結合
     return {**meta, **fin}
@@ -124,7 +127,7 @@ def retry_on_404(
             if not is_404_error(e):
                 raise
             msg = f"[RETRY {attempt}/{retries}] {description} failed with 404: {e}"
-            print(msg)
+            #print(msg)
             traceback.print_exc()
             if log_root is not None:
                 log_error(msg, log_root)
@@ -151,7 +154,8 @@ def process_tdnet(date_str, log_root: Path | None = None):
         traceback.print_exc()
         if log_root is not None:
             log_error(msg, log_root)
-        return pd.DataFrame(columns=meta_cols)
+        raise
+
 
     rows = []
 
@@ -165,12 +169,12 @@ def process_tdnet(date_str, log_root: Path | None = None):
     # 列順を整える（見やすさのため）
     meta_cols = ["code", "company_name", "title", "pubdate", "fiscal_period", "consolidated"]
     if df.empty:
-        return pd.DataFrame(columns=meta_cols)
+        return pd.DataFrame(columns=meta_cols), filings
 
     fin_cols = [col for col in df.columns if col not in meta_cols]
     df = df[meta_cols + fin_cols]
 
-    return df
+    return df, filings
 
 # ----------------------------------------
 # 4. 日付ループユーティリティ
@@ -208,15 +212,27 @@ def process_year(year: int, output_root: Path | str = None):
     for date_str in get_date_strings_for_year(year):
         print(f"Processing {date_str}...")
         try:
-            df = process_tdnet(date_str, log_root=log_root)
+            df, filings = process_tdnet(date_str, log_root=log_root)
             output_path = year_dir / f"my_features_{date_str}.csv"
-            save_to_csv(df, output_path)
-            print(f"  saved {output_path}")
+            if df.empty:
+                print(f"  no XBRL data for {date_str}, skip saving")
+            else:
+                save_to_csv(df, output_path)
+                print(f"  saved {output_path}")
+
+            process_pdf_files(
+                filings,
+                year=year,
+                date_str=date_str,
+                base_root=output_root,
+                log_root=log_root,
+            )
         except Exception as e:
             msg = f"[ERROR] {date_str}: {type(e).__name__}: {e}"
             print(msg)
             traceback.print_exc()
             log_error(msg, log_root)
+            raise
 
 
 # ----------------------------------------
@@ -228,13 +244,114 @@ def save_to_csv(df: pd.DataFrame, output_path: str) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     df.to_csv(path, index=False)
 
+
+def sanitize_filename(text: str, max_length: int = 120) -> str:
+    invalid_chars = '<>:"/\\|?*\n\r\t'
+    cleaned = "".join("_" if ch in invalid_chars else ch for ch in text)
+    return cleaned[:max_length].strip(" _") or "unnamed"
+
+
+def extract_pdf_text(filing, log_root: Path | None = None) -> str | None:
+    try:
+        result = retry_on_404(
+            filing.fetch_pdf,
+            retries=1,
+            wait_seconds=1.0,
+            log_root=log_root,
+            description=f"filing.fetch_pdf for {filing.company_code} {filing.title}",
+        )
+    except Exception as e:
+        msg = f"[PDF FETCH ERROR] {filing.company_code} {filing.title}: {type(e).__name__}: {e}"
+        print(msg)
+        traceback.print_exc()
+        if log_root is not None:
+            log_error(msg, log_root)
+        return None
+
+    try:
+        with fitz.open(stream=result.data, filetype="pdf") as doc:
+            pages = [page.get_text("text") for page in doc]
+        return "\n".join(pages).strip()
+    except Exception as e:
+        msg = f"[PDF PARSE ERROR] {filing.company_code} {filing.title}: {type(e).__name__}: {e}"
+        print(msg)
+        traceback.print_exc()
+        if log_root is not None:
+            log_error(msg, log_root)
+        return None
+
+
+def extract_pdf_words(text: str) -> list[str]:
+    tokenizer = Tokenizer()
+    words: list[str] = []
+    for token in tokenizer.tokenize(text):
+        pos = token.part_of_speech.split(",", 1)[0]
+        if pos in {"名詞", "動詞", "形容詞"}:
+            base = token.base_form
+            word = base if base != "*" and base != token.surface else token.surface
+            if word.strip():
+                words.append(word)
+    return words
+
+
+def save_pdf_text(text: str, output_path: Path) -> None:
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+    output_path.write_text(text, encoding="utf-8")
+
+
+def save_pdf_words(words: list[str], output_path: Path) -> None:
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+    pd.DataFrame({"word": words}).to_csv(output_path, index=False, encoding="utf-8")
+
+
+def process_pdf_files(
+    filings,
+    year: int,
+    date_str: str,
+    base_root: Path,
+    log_root: Path | None = None,
+) -> None:
+    text_root = base_root / "pdf_text" / str(year) / date_str
+    word_root = base_root / "pdf_words" / str(year) / date_str
+    meta_rows = []
+
+    for filing in filings:
+        filename_base = f"{filing.company_code}_{sanitize_filename(filing.title or filing.document_url or filing.xbrl_url)}"
+        pdf_text = extract_pdf_text(filing, log_root=log_root)
+        if pdf_text is None:
+            continue
+
+        text_path = text_root / f"{filename_base}.txt"
+        word_path = word_root / f"{filename_base}_words.csv"
+
+        save_pdf_text(pdf_text, text_path)
+        words = extract_pdf_words(pdf_text)
+        save_pdf_words(words, word_path)
+
+        meta_rows.append(
+            {
+                "code": filing.company_code,
+                "company_name": filing.company_name,
+                "title": filing.title,
+                "pubdate": filing.pubdate,
+                "text_path": str(text_path),
+                "word_path": str(word_path),
+                "word_count": len(words),
+            }
+        )
+
+    if meta_rows:
+        meta_path = base_root / "pdf_metadata" / str(year) / f"pdf_meta_{date_str}.csv"
+        meta_df = pd.DataFrame(meta_rows)
+        meta_df.to_csv(meta_path, index=False, encoding="utf-8")
+
 # ----------------------------------------
 # 5. 実行例
 # メイン実行部: 年を指定して処理を開始する
 # ----------------------------------------
 if __name__ == "__main__":
     #year = int(sys.argv[1]) if len(sys.argv) > 1 else 2026
-    year = 2024
+    year = 2026
     output_root = Path(__file__).resolve().parent / "csv"
     process_year(year, output_root)
 

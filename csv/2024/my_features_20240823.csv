@@ -1,0 +1,5 @@
+code,company_name,title,pubdate,fiscal_period,consolidated,revenue,gross_profit,operating_income,ordinary_income,net_income_parent,eps,total_assets,shareholders_equity,cash_and_equivalents,interest_bearing_debt,operating_cf,investing_cf,financing_cf,roe,roa
+68380,多摩川ＨＤ,決算期変更に伴う業績予想および配当予想の公表に関するお知らせ,2024-08-23 17:00:00,"DurationPeriod(start_date=datetime.date(2024, 4, 1), end_date=datetime.date(2025, 3, 31))",True,4153000000,,-215000000,-215000000,-443000000,-71.02,,,,,,,,,
+35770,東海染工,特別利益、特別損失の計上及び配当予想の修正に関するお知らせ,2024-08-23 14:30:00,,True,,,,,,,,,,,,,,,
+37100,ジョルダン,（訂正・数値データ訂正）「令和６年９月期 第２四半期決算短信〔日本基準〕（連結）」の一部訂正について,2024-08-23 13:30:00,"DurationPeriod(start_date=datetime.date(2022, 10, 1), end_date=datetime.date(2023, 3, 31))",True,1635433000,670849000,-52765000,29305000,1000000,0.24,5627000000,4602000000,3196599000,,-14964000,-50587000,-22748000,,
+37100,ジョルダン,（訂正・数値データ訂正）「令和６年９月期 第３四半期決算短信〔日本基準〕（連結）」の一部訂正について,2024-08-23 13:30:00,"DurationPeriod(start_date=datetime.date(2022, 10, 1), end_date=datetime.date(2023, 6, 30))",True,2281194000,925009000,-136132000,17788000,-21000000,-4.21,5509000000,4524000000,,,,,,,

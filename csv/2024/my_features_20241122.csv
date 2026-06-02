@@ -1,0 +1,6 @@
+code,company_name,title,pubdate,fiscal_period,consolidated,revenue,gross_profit,operating_income,ordinary_income,net_income_parent,eps,total_assets,shareholders_equity,cash_and_equivalents,interest_bearing_debt,operating_cf,investing_cf,financing_cf,roe,roa
+175A0,Ｇ－ウィルスマート,（数値データ訂正）「通期業績予想の修正に関するお知らせ」における数値データ（XBRL）の一部訂正について,2024-11-22 17:00:00,,True,1085000000,,36000000,35000000,,21.78,,,,,,,,,
+27520,フジオフードＧ本社,2024年12月期　第３四半期決算短信〔日本基準〕（連結）（公認会計士等による期中レビューの完了）,2024-11-22 16:00:00,"DurationPeriod(start_date=datetime.date(2023, 1, 1), end_date=datetime.date(2023, 9, 30))",True,23403000000,15273000000,1149000000,1024000000,471000000,10.38,19700000000,2106000000,,,,,,,
+33210,ミタチ,業績予想の修正に関するお知らせ,2024-11-22 15:30:00,"DurationPeriod(start_date=datetime.date(2024, 6, 1), end_date=datetime.date(2024, 11, 30))",True,20048000000,,935000000,1024000000,1222000000,88.6,,,,,,,,,
+34590,Ｒ－サムティレジ,2025年１月期（第19期）の運用状況及び１口当たり分配金の予想の修正について,2024-11-22 15:30:00,,True,5865000000,,2467000000,1970000000,,2489,,,,,,,,,
+202A0,Ｇ－豆蔵デジタルＨＤ,（訂正・数値データ訂正）「2025年３月期 第２四半期（中間期）決算短信〔日本基準〕（連結）」の一部訂正について,2024-11-22 11:00:00,"DurationPeriod(start_date=datetime.date(2024, 4, 1), end_date=datetime.date(2024, 9, 30))",True,5266000000,,971000000,948000000,621000000,38.77,3743000000,2596000000,,,,,,,

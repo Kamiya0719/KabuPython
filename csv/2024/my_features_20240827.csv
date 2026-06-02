@@ -1,0 +1,7 @@
+code,company_name,title,pubdate,fiscal_period,consolidated,revenue,gross_profit,operating_income,ordinary_income,net_income_parent,eps,total_assets,shareholders_equity,cash_and_equivalents,interest_bearing_debt,operating_cf,investing_cf,financing_cf,roe,roa
+14180,インターライフ,通期連結業績予想の修正に関するお知らせ,2024-08-27 16:00:00,"DurationPeriod(start_date=datetime.date(2024, 3, 1), end_date=datetime.date(2025, 2, 28))",True,12626000000,,270000000,245000000,384000000,24.82,,,,,,,,,
+86280,松井証,2025年3月期中間配当（予定）について,2024-08-27 16:00:00,,True,,,,,,,,,,,,,,,
+25900,ＤｙＤｏ,2025年1月期 第2四半期（中間期）決算短信〔日本基準〕（連結）,2024-08-27 15:00:00,"DurationPeriod(start_date=datetime.date(2023, 1, 21), end_date=datetime.date(2023, 7, 20))",True,117578000000,53754000000,2319000000,1396000000,4905000000,155.7,199348000000,92443000000,36302000000,,5500000000,-4120000000,1810000000,,
+36450,Ｇ－メディカルネット,（訂正・数値データ訂正）「2024年５月期 決算短信〔日本基準〕（連結）」の一部訂正について,2024-08-27 15:00:00,"DurationPeriod(start_date=datetime.date(2022, 6, 1), end_date=datetime.date(2023, 5, 31))",True,5252061000,1841003000,298281000,322505000,5000000,0.66,3989000000,1907000000,1507711000,,119000000,-285000000,144000000,0.003,0.087
+62840,ＡＳＢ機械,配当方針の変更および配当予想の修正（増配）に関するお知らせ,2024-08-27 15:00:00,,True,,,,,,,,,,,,,,,
+90810,神奈中交,業績予想の修正に関するお知らせ,2024-08-27 15:00:00,"DurationPeriod(start_date=datetime.date(2024, 4, 1), end_date=datetime.date(2024, 9, 30))",True,56885000000,,3836000000,4013000000,2564000000,209.01,,,,,,,,,

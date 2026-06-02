@@ -1,0 +1,11 @@
+code,company_name,title,pubdate,fiscal_period,consolidated,revenue,gross_profit,operating_income,ordinary_income,net_income_parent,eps,total_assets,shareholders_equity,cash_and_equivalents,interest_bearing_debt,operating_cf,investing_cf,financing_cf,roe,roa
+60960,レアジョブ,特別損失（減損損失）の計上及び通期業績予想の修正に関するお知らせ,2024-04-18 16:00:00,"DurationPeriod(start_date=datetime.date(2023, 4, 1), end_date=datetime.date(2024, 3, 31))",True,5787000000,,228000000,279000000,194000000,20.69,,,,,,,,,
+61930,Ｇ－バーチャレクス,業績予想の修正に関するお知らせ,2024-04-18 16:00:00,"DurationPeriod(start_date=datetime.date(2023, 4, 1), end_date=datetime.date(2024, 3, 31))",True,6798000000,,576000000,497000000,635000000,217.74,,,,,,,,,
+30910,ブロンコＢ,2024年12月期　第１四半期決算短信〔日本基準〕（連結）,2024-04-18 15:30:00,"DurationPeriod(start_date=datetime.date(2023, 1, 1), end_date=datetime.date(2023, 3, 31))",True,6527022000,4385059000,777952000,793516000,527000000,35.47,22995000000,18949000000,,,,,,,
+87080,アイザワ証Ｇ,2024年３月期連結決算速報値に関するお知らせ,2024-04-18 15:30:00,"DurationPeriod(start_date=datetime.date(2023, 4, 1), end_date=datetime.date(2024, 3, 31))",True,,,-2782000000,-1911000000,-2375000000,,,,,,,,,,
+32950,Ｒ－ヒューリックＲＥ,2024年2期 決算短信（ＲＥＩＴ）,2024-04-18 15:00:00,"DurationPeriod(start_date=datetime.date(2023, 9, 1), end_date=datetime.date(2024, 2, 29))",True,11323000000,,5960572000,5160998000,,3583,409823000000,,22578430000,,16742000000,-13086000000,2988000000,,0.013
+34880,Ｒ－ザイマックス,2024年2月期 決算短信（ＲＥＩＴ）,2024-04-18 15:00:00,"DurationPeriod(start_date=datetime.date(2023, 9, 1), end_date=datetime.date(2024, 2, 29))",True,1662000000,,922906000,824718000,,3299,48256000000,,3801694000,,880000000,-63000000,-804000000,,0.017
+69990,ＫＯＡ,2024年３月期通期連結業績予想の修正に関するお知らせ,2024-04-18 15:00:00,"DurationPeriod(start_date=datetime.date(2023, 4, 1), end_date=datetime.date(2023, 9, 30))",True,75072000000,,10222000000,10538000000,7367000000,198.75,,,,,,,,,
+55920,Ｇ－くすりの窓口,通期連結業績予想の修正に関するお知らせ,2024-04-18 13:00:00,"DurationPeriod(start_date=datetime.date(2023, 4, 1), end_date=datetime.date(2024, 3, 31))",True,7420000000,,1050000000,938000000,391000000,42.64,,,,,,,,,
+86240,いちよし,2024年３月期　連結決算速報値に関するお知らせ,2024-04-18 12:00:00,"DurationPeriod(start_date=datetime.date(2023, 4, 1), end_date=datetime.date(2024, 3, 31))",True,,,1166000000,1216000000,758000000,21.93,,,,,,,,,
+18410,サンユー建設,配当予想の修正（増配）に関するお知らせ,2024-04-18 10:45:00,,True,,,,,,,,,,,,,,,

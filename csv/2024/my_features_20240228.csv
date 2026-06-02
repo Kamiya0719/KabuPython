@@ -1,0 +1,11 @@
+code,company_name,title,pubdate,fiscal_period,consolidated,revenue,gross_profit,operating_income,ordinary_income,net_income_parent,eps,total_assets,shareholders_equity,cash_and_equivalents,interest_bearing_debt,operating_cf,investing_cf,financing_cf,roe,roa
+69120,菊水ＨＤ,配当予想の修正(増配)に関するお知らせ,2024-02-28 17:00:00,,True,,,,,,,,,,,,,,,
+85080,Ｊトラスト,（訂正・数値データ訂正）「2023年12月期 決算短信〔IFRS〕（連結）」の一部訂正に関するお知らせ,2024-02-28 16:00:00,"DurationPeriod(start_date=datetime.date(2022, 1, 1), end_date=datetime.date(2022, 12, 31))",True,114279000000,,8059000000,,16310000000,120.39,1214714000000,,105740000000,,-47079000000,-501000000,4344000000,0.121,0.008
+38390,ＯＤＫ,業績予想の修正に関するお知らせ,2024-02-28 15:40:00,"DurationPeriod(start_date=datetime.date(2023, 4, 1), end_date=datetime.date(2024, 3, 31))",True,5566000000,,420000000,449000000,236000000,28.98,,,,,,,,,
+31510,バイタルＫＳＫ,期末配当予想の修正（増配）に関するお知らせ,2024-02-28 15:30:00,,True,,,,,,,,,,,,,,,
+98850,シャルレ,業績予想及び配当予想の修正に関するお知らせ,2024-02-28 15:30:00,"DurationPeriod(start_date=datetime.date(2023, 4, 1), end_date=datetime.date(2024, 3, 31))",True,13255000000,,251000000,301000000,-740000000,-46.75,,,,,,,,,
+44340,サーバーワークス,通期業績予想の修正に関するお知らせ,2024-02-28 15:00:00,"DurationPeriod(start_date=datetime.date(2023, 3, 1), end_date=datetime.date(2024, 2, 29))",True,17295000000,,552000000,624000000,453000000,58.64,,,,,,,,,
+83370,千葉興銀,2024年３月期通期業績予想の修正に関するお知らせ,2024-02-28 15:00:00,"DurationPeriod(start_date=datetime.date(2023, 4, 1), end_date=datetime.date(2024, 3, 31))",True,,,,9671000000,6477000000,92.07,,,,,,,,,
+87050,日産証券グループ,配当方針の変更及び期末配当予想（増配）に関するお知らせ,2024-02-28 15:00:00,,True,,,,,,,,,,,,,,,
+90440,南海電鉄,通期業績予想及び期末配当予想の修正に関するお知らせ,2024-02-28 14:00:00,"DurationPeriod(start_date=datetime.date(2023, 4, 1), end_date=datetime.date(2024, 3, 31))",True,221280000000,,21023000000,18965000000,14623000000,129.13,,,,,,,,,
+98180,大丸エナ,配当予想の修正（増配）に関するお知らせ,2024-02-28 14:00:00,,True,,,,,,,,,,,,,,,

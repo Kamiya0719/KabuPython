@@ -1,0 +1,7 @@
+code,company_name,title,pubdate,fiscal_period,consolidated,revenue,gross_profit,operating_income,ordinary_income,net_income_parent,eps,total_assets,shareholders_equity,cash_and_equivalents,interest_bearing_debt,operating_cf,investing_cf,financing_cf,roe,roa
+89660,Ｒ－平和ＲＥ,2024年5月期 決算短信(REIT),2024-07-17 15:30:00,"DurationPeriod(start_date=datetime.date(2023, 12, 1), end_date=datetime.date(2024, 5, 31))",True,8735000000,,4483697000,3939088000,,3424,243163000000,,15322384000,,6532000000,-5316000000,-2293000000,,0.016
+29790,Ｒ－ＳＯＳｉＬＡ物流,2024年5月期　決算短信（ＲＥＩＴ）,2024-07-17 15:00:00,"DurationPeriod(start_date=datetime.date(2023, 12, 1), end_date=datetime.date(2024, 5, 31))",True,4252000000,,2005182000,1773406000,,2436,146429000000,,6415670000,,2229000000,-16000000,-2058000000,,0.012
+71720,ＪＩＡ,2024年12月期第２四半期（累計）連結業績予想の修正および通期連結業績予想の修正に関するお知らせ　,2024-07-17 15:00:00,"DurationPeriod(start_date=datetime.date(2024, 1, 1), end_date=datetime.date(2024, 6, 30))",True,8938000000,,3200000000,2611000000,1696000000,28.06,,,,,,,,,
+71720,ＪＩＡ,配当予想の修正（増配）に関するお知らせ　,2024-07-17 15:00:00,,True,,,,,,,,,,,,,,,
+36730,ブロドリーフ,第２四半期（累計）連結業績予想の修正に関するお知らせ,2024-07-17 12:30:00,"DurationPeriod(start_date=datetime.date(2024, 1, 1), end_date=datetime.date(2024, 6, 30))",True,7390000000,,-1111000000,,-826000000,-9.33,,,,,,,,,
+63120,フロイント,(訂正・数値データ訂正) 「2025年２月期　第１四半期決算短信〔日本基準〕(連結)」の一部訂正について,2024-07-17 11:50:00,"DurationPeriod(start_date=datetime.date(2024, 3, 1), end_date=datetime.date(2024, 5, 31))",True,4124000000,,-264000000,-247000000,-205000000,-12.16,25272000000,14677000000,,,,,,,
