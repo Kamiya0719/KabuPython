@@ -3,10 +3,14 @@ import time
 import traceback
 from datetime import date, timedelta
 from pathlib import Path
+import io
+import zipfile
+from html.parser import HTMLParser
 
 import tdnet
 import pandas as pd
 import fitz
+import requests
 from janome.tokenizer import Tokenizer
 from tdnet import CK, extract_values, extracted_to_dict
 
@@ -181,8 +185,8 @@ def process_tdnet(date_str, log_root: Path | None = None):
 # 指定年の全日付を YYYYMMDD 形式の文字列で生成する
 
 def get_date_strings_for_year(year):
-    current = date(year, 1, 1)
-    end = date(year, 12, 31)
+    current = date(year, 5, 1)
+    end = date(year, 5, 2)
     while current <= end:
         yield current.strftime("%Y%m%d")
         current += timedelta(days=1)
@@ -251,7 +255,227 @@ def sanitize_filename(text: str, max_length: int = 120) -> str:
     return cleaned[:max_length].strip(" _") or "unnamed"
 
 
+def extract_html_from_zip(zip_data: bytes, log_root: Path | None = None):
+    """
+    ZIPアーカイブからHTMLまたはiXBRLを抽出
+    （PDFが無い場合のフォールバック）
+    """
+    try:
+        with zipfile.ZipFile(io.BytesIO(zip_data)) as z:
+            all_files = z.namelist()
+            
+            # 優先順: qualitative.htm > ixbrl.htm > その他.htm
+            preferred_files = [
+                f for f in all_files 
+                if 'qualitative.htm' in f.lower()
+            ]
+            if not preferred_files:
+                preferred_files = [
+                    f for f in all_files 
+                    if f.lower().endswith('.htm') or f.lower().endswith('.html')
+                ]
+            
+            if not preferred_files:
+                msg = f"[HTML EXTRACT] No HTML files found in ZIP"
+                print(msg)
+                if log_root is not None:
+                    log_error(msg, log_root)
+                return None
+            
+            # 最初のHTMLファイルを取得
+            html_file = preferred_files[0]
+            msg = f"[HTML EXTRACT] Extracting from: {html_file}"
+            print(msg)
+            if log_root is not None:
+                log_error(msg, log_root)
+            
+            html_data = z.read(html_file).decode('utf-8', errors='ignore')
+            
+            # HTMLからテキストを抽出
+            class HTMLTextExtractor(HTMLParser):
+                def __init__(self):
+                    super().__init__()
+                    self.text_parts = []
+                    self.skip_script = False
+                
+                def handle_starttag(self, tag, attrs):
+                    if tag in ('script', 'style'):
+                        self.skip_script = True
+                
+                def handle_endtag(self, tag):
+                    if tag in ('script', 'style'):
+                        self.skip_script = False
+                
+                def handle_data(self, data):
+                    if not self.skip_script:
+                        text = data.strip()
+                        if text:
+                            self.text_parts.append(text)
+                
+                def get_text(self):
+                    return '\n'.join(self.text_parts)
+            
+            extractor = HTMLTextExtractor()
+            extractor.feed(html_data)
+            text = extractor.get_text()
+            
+            if text.strip():
+                msg = f"[HTML EXTRACT] Extracted {len(text)} characters from HTML"
+                print(msg)
+                if log_root is not None:
+                    log_error(msg, log_root)
+                
+                # テキストをバイト列に変換して返す
+                class DownloadResult:
+                    def __init__(self, data):
+                        self.data = data
+                
+                return DownloadResult(text.encode('utf-8'))
+            else:
+                msg = f"[HTML EXTRACT] HTML file is empty or unreadable"
+                print(msg)
+                if log_root is not None:
+                    log_error(msg, log_root)
+                return None
+    
+    except Exception as e:
+        msg = f"[HTML EXTRACT ERROR] {type(e).__name__}: {e}"
+        print(msg)
+        if log_root is not None:
+            log_error(msg, log_root)
+        return None
+
+
+def extract_pdf_from_zip(zip_data: bytes, log_root: Path | None = None):
+    """
+    ZIPアーカイブからPDFを抽出
+    （サブディレクトリ内のPDFも検索）
+    """
+    try:
+        with zipfile.ZipFile(io.BytesIO(zip_data)) as z:
+            # ZIP内のすべてのファイルをログ出力
+            all_files = z.namelist()
+            msg = f"[ZIP EXTRACT] ZIP contents: {all_files}"
+            print(msg)
+            if log_root is not None:
+                log_error(msg, log_root)
+            
+            # 再帰的にPDFを検索
+            pdf_files = [f for f in all_files if f.lower().endswith('.pdf')]
+            
+            if not pdf_files:
+                msg = f"[ZIP EXTRACT] No PDF found in ZIP, trying HTML fallback..."
+                print(msg)
+                if log_root is not None:
+                    log_error(msg, log_root)
+                # HTML抽出へフォールバック
+                return extract_html_from_zip(zip_data, log_root=log_root)
+            
+            # 最初のPDFを取得
+            pdf_file = pdf_files[0]
+            msg = f"[ZIP EXTRACT] Found PDF in ZIP: {pdf_file}"
+            print(msg)
+            if log_root is not None:
+                log_error(msg, log_root)
+            
+            pdf_data = z.read(pdf_file)
+            
+            # DownloadResult互換オブジェクトを返す
+            class DownloadResult:
+                def __init__(self, data):
+                    self.data = data
+            
+            return DownloadResult(pdf_data)
+    
+    except Exception as e:
+        msg = f"[ZIP EXTRACT ERROR] {type(e).__name__}: {e}"
+        print(msg)
+        if log_root is not None:
+            log_error(msg, log_root)
+        return None
+
+
+def fetch_pdf_with_fallback(filing, log_root: Path | None = None):
+    """
+    fetch_pdf失敗時に、requestsで直接URLから取得するフォールバック処理
+    （ZIPアーカイブ対応）
+    """
+    headers = {
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+    }
+    
+    # 試行するURL一覧
+    urls_to_try = []
+    if filing.document_url:
+        urls_to_try.append(("document_url", filing.document_url))
+    if hasattr(filing, "xbrl_url") and filing.xbrl_url:
+        urls_to_try.append(("xbrl_url", filing.xbrl_url))
+    
+    for url_type, url in urls_to_try:
+        try:
+            msg = f"[PDF FALLBACK] Attempting {url_type}: {url[:60]}..."
+            print(msg)
+            if log_root is not None:
+                log_error(msg, log_root)
+            
+            response = requests.get(
+                url,
+                headers=headers,
+                allow_redirects=True,
+                timeout=30,
+                verify=False
+            )
+            response.raise_for_status()
+            
+            content_type = response.headers.get("Content-Type", "")
+            
+            # PDFデータか確認
+            if content_type.startswith("application/pdf"):
+                msg = f"[PDF FALLBACK SUCCESS] {url_type}: {url}"
+                print(msg)
+                if log_root is not None:
+                    log_error(msg, log_root)
+                
+                class DownloadResult:
+                    def __init__(self, data):
+                        self.data = data
+                
+                return DownloadResult(response.content)
+            
+            # ZIPファイルか確認
+            elif content_type.startswith("application/zip"):
+                msg = f"[PDF FALLBACK] ZIP file detected, extracting PDF..."
+                print(msg)
+                if log_root is not None:
+                    log_error(msg, log_root)
+                
+                result = extract_pdf_from_zip(response.content, log_root=log_root)
+                if result is not None:
+                    msg = f"[PDF FALLBACK SUCCESS] Extracted PDF from ZIP ({url_type})"
+                    print(msg)
+                    if log_root is not None:
+                        log_error(msg, log_root)
+                    return result
+            
+            else:
+                msg = f"[PDF FALLBACK] Unsupported content-type: {content_type}"
+                print(msg)
+                if log_root is not None:
+                    log_error(msg, log_root)
+        
+        except Exception as e:
+            msg = f"[PDF FALLBACK ERROR] {url_type}: {type(e).__name__}: {e}"
+            print(msg)
+            if log_root is not None:
+                log_error(msg, log_root)
+    
+    return None
+
+
 def extract_pdf_text(filing, log_root: Path | None = None) -> str | None:
+    result = None
+    
+    # 第1段階：tdnet.fetch_pdf を試行
     try:
         result = retry_on_404(
             filing.fetch_pdf,
@@ -266,16 +490,43 @@ def extract_pdf_text(filing, log_root: Path | None = None) -> str | None:
         traceback.print_exc()
         if log_root is not None:
             log_error(msg, log_root)
+        
+        # 第2段階：requestsでのフォールバック処理
+        msg = f"[PDF FALLBACK] Attempting direct request for {filing.company_code} {filing.title}"
+        print(msg)
+        if log_root is not None:
+            log_error(msg, log_root)
+        
+        result = fetch_pdf_with_fallback(filing, log_root=log_root)
+    
+    if result is None:
+        msg = f"[PDF FETCH FAILED] {filing.company_code} {filing.title}: All methods failed"
+        print(msg)
+        if log_root is not None:
+            log_error(msg, log_root)
         return None
 
     try:
+        # PDFとして処理
         with fitz.open(stream=result.data, filetype="pdf") as doc:
             pages = [page.get_text("text") for page in doc]
         return "\n".join(pages).strip()
     except Exception as e:
-        msg = f"[PDF PARSE ERROR] {filing.company_code} {filing.title}: {type(e).__name__}: {e}"
+        # PDF処理失敗時、テキストとして処理を試みる
+        msg = f"[PDF PARSE ERROR] {filing.company_code} {filing.title}: Trying as text... ({type(e).__name__})"
         print(msg)
-        traceback.print_exc()
+        if log_root is not None:
+            log_error(msg, log_root)
+        
+        try:
+            text = result.data.decode('utf-8', errors='ignore')
+            if text.strip():
+                return text.strip()
+        except Exception:
+            pass
+        
+        msg = f"[PDF PARSE FAILED] {filing.company_code} {filing.title}: {type(e).__name__}: {e}"
+        print(msg)
         if log_root is not None:
             log_error(msg, log_root)
         return None
@@ -315,6 +566,7 @@ def process_pdf_files(
     word_root = base_root / "pdf_words" / str(year) / date_str
     meta_rows = []
 
+    print(f"process_pdf_files {len(filings)} filings...")
     for filing in filings:
         filename_base = f"{filing.company_code}_{sanitize_filename(filing.title or filing.document_url or filing.xbrl_url)}"
         pdf_text = extract_pdf_text(filing, log_root=log_root)
@@ -342,6 +594,7 @@ def process_pdf_files(
 
     if meta_rows:
         meta_path = base_root / "pdf_metadata" / str(year) / f"pdf_meta_{date_str}.csv"
+        meta_path.parent.mkdir(parents=True, exist_ok=True)
         meta_df = pd.DataFrame(meta_rows)
         meta_df.to_csv(meta_path, index=False, encoding="utf-8")
 
