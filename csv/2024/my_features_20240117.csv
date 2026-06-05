@@ -1,7 +1,0 @@
-code,company_name,title,pubdate,fiscal_period,consolidated,revenue,gross_profit,operating_income,ordinary_income,net_income_parent,eps,total_assets,shareholders_equity,cash_and_equivalents,interest_bearing_debt,operating_cf,investing_cf,financing_cf,roe,roa
-32790,Ｒ－ＡＰＩ,2023年11月期決算短信（REIT）,2024-01-17 16:00:00,"DurationPeriod(start_date=datetime.date(2023, 6, 1), end_date=datetime.date(2023, 11, 30))",True,17344000000,,9588370000,8622579000,,10678,568922000000,,25548373000,,13797000000,-1474000000,-8124000000,,0.015
-71870,ジェイリース,株式分割、株式分割に伴う定款の一部変更及び配当予想の修正並びに株主優待制度の変更に関するお知らせ,2024-01-17 16:00:00,,True,,,,,,,,,,,,,,,
-23050,スタジオアリス,連結業績予想の修正に関するお知らせ,2024-01-17 15:30:00,"DurationPeriod(start_date=datetime.date(2023, 3, 1), end_date=datetime.date(2024, 2, 29))",True,38564000000,,4017000000,4009000000,2257000000,12.93,,,,,,,,,
-29890,Ｒ－東海道リート,2024年７月期の運用状況及び分配金の予想の修正及び2025年１月期の運用状況及び分配金の予想に関するお知らせ,2024-01-17 15:15:00,,True,1907000000,,,,,3255,,,,,,,,,
-29790,Ｒ－ＳＯＳｉＬＡ物流,2023年11月期　決算短信（ＲＥＩＴ）,2024-01-17 15:00:00,"DurationPeriod(start_date=datetime.date(2023, 6, 1), end_date=datetime.date(2023, 11, 30))",True,4336000000,,2041086000,1818182000,,2497,146982000000,,6260865000,,3606000000,-1276000000,-1202000000,,0.012
-52690,日コンクリ,2024年３月期 第２四半期決算短信〔日本基準〕（連結）,2024-01-17 14:00:00,"DurationPeriod(start_date=datetime.date(2022, 4, 1), end_date=datetime.date(2022, 9, 30))",True,26433569000,4667594000,1273310000,1529928000,808000000,14.89,80378000000,37254000000,9114533000,,3429170000,-609041000,-849452000,,

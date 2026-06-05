@@ -1,3 +1,0 @@
-code,company_name,title,pubdate,fiscal_period,consolidated,revenue,gross_profit,operating_income,ordinary_income,net_income_parent,eps,total_assets,shareholders_equity,cash_and_equivalents,interest_bearing_debt,operating_cf,investing_cf,financing_cf,roe,roa
-60870,アビスト,2024年９月期決算短信〔日本基準〕(非連結),2024-12-30 11:30:00,"DurationPeriod(start_date=datetime.date(2023, 10, 1), end_date=datetime.date(2024, 9, 30))",True,10002339000,2744904000,903479000,905846000,,153.55,9380000000,6859000000,4488541000,,572000000,12000000,-406000000,0.091,0.097
-60870,アビスト,(訂正・数値データ訂正)「2024年９月期 第３四半期決算短信〔日本基準〕（非連結）」の一部訂正について,2024-12-30 11:30:00,,True,7430275000,2060044000,761953000,763167000,,130.17,9026000000,6730000000,,,,,,,

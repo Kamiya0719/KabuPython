@@ -1,6 +1,0 @@
-code,company_name,title,pubdate,fiscal_period,consolidated,revenue,gross_profit,operating_income,ordinary_income,net_income_parent,eps,total_assets,shareholders_equity,cash_and_equivalents,interest_bearing_debt,operating_cf,investing_cf,financing_cf,roe,roa
-73520,Ｇ－ＴＷＯＳＴＯＮＥ,株式分割及び定款の一部変更および配当予想の修正に関するお知らせ,2024-01-16 17:00:00,,True,,,,,,,,,,,,,,,
-63270,北川精機,2024年6月期第2四半期連結業績予想及び通期連結業績予想の修正に関するお知らせ,2024-01-16 15:15:00,"DurationPeriod(start_date=datetime.date(2023, 7, 1), end_date=datetime.date(2023, 12, 31))",True,2220000000,,197000000,182000000,148000000,21.01,,,,,,,,,
-34950,香陵住販,通期業績予想の修正に関するお知らせ,2024-01-16 15:00:00,"DurationPeriod(start_date=datetime.date(2023, 10, 1), end_date=datetime.date(2024, 9, 30))",True,9324000000,,856000000,854000000,653000000,241.87,,,,,,,,,
-35930,ホギメディ,2024年3月期 第3四半期決算短信［日本基準］(連結),2024-01-16 15:00:00,"DurationPeriod(start_date=datetime.date(2022, 4, 1), end_date=datetime.date(2022, 12, 31))",True,29754000000,10331000000,3487000000,3587000000,2609000000,107.54,100914000000,86942000000,17351000000,,3381000000,-2087000000,-2906000000,,
-75610,ハークスレイ,配当予想の修正（増配）に関するお知らせ,2024-01-16 15:00:00,,True,,,,,,,,,,,,,,,

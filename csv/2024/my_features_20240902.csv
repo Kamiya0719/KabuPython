@@ -1,7 +1,0 @@
-code,company_name,title,pubdate,fiscal_period,consolidated,revenue,gross_profit,operating_income,ordinary_income,net_income_parent,eps,total_assets,shareholders_equity,cash_and_equivalents,interest_bearing_debt,operating_cf,investing_cf,financing_cf,roe,roa
-41690,Ｇ－エネチェンジ,2025年３月期通期業績予想の策定に関するお知らせ,2024-09-02 17:15:00,"DurationPeriod(start_date=datetime.date(2024, 1, 1), end_date=datetime.date(2025, 3, 31))",True,4379000000,,-2125000000,-2404000000,-4985000000,-163.55,,,,,,,,,
-38560,Ａｂａｌａｎｃｅ,（訂正・数値データ訂正）「2024年６月期決算短信〔日本基準〕（連結）」の一部訂正について,2024-09-02 16:30:00,"DurationPeriod(start_date=datetime.date(2022, 7, 1), end_date=datetime.date(2023, 6, 30))",True,208972000000,44573000000,23349000000,24894000000,9530000000,547.83,150173000000,23800000000,37053000000,,44757000000,-21191000000,-5446000000,0.524,0.169
-68980,トミタ電機,業績予想の修正に関するお知らせ,2024-09-02 16:00:00,"DurationPeriod(start_date=datetime.date(2024, 2, 1), end_date=datetime.date(2024, 7, 31))",True,810000000,,7000000,0,9000000,14.85,,,,,,,,,
-89580,Ｒ－グロバル,2024年９月期及び2025年３月期分配予想の修正に関するお知らせ,2024-09-02 15:30:00,,True,,,,,,,,,,,,,,,
-25930,伊藤園,2025年４月期 第１四半期決算短信〔日本基準〕（連結）,2024-09-02 15:00:00,"DurationPeriod(start_date=datetime.date(2023, 5, 1), end_date=datetime.date(2023, 7, 31))",True,125039000000,47389000000,7128000000,7219000000,4440000000,37.31,352501000000,178572000000,,,,,,,
-29340,Ｇ－Ｊフロンティア,2024年５月期通期連結業績予想の取り下げに関するお知らせ,2024-09-02 15:00:00,"DurationPeriod(start_date=datetime.date(2023, 6, 1), end_date=datetime.date(2024, 5, 31))",True,16844000000,,-1816000000,-1841000000,-1899000000,-410.6,,,,,,,,,

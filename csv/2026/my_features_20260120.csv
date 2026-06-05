@@ -1,6 +1,0 @@
-code,company_name,title,pubdate,fiscal_period,consolidated,revenue,gross_profit,operating_income,ordinary_income,net_income_parent,eps,total_assets,shareholders_equity,cash_and_equivalents,interest_bearing_debt,operating_cf,investing_cf,financing_cf,roe,roa
-57210,エス・サイエンス,業績予想の開示に関するお知らせ,2026-01-20 16:30:00,,True,634000000,,,,,-0.68,,,,,,,,,
-30910,ブロンコＢ,2025年12月期　決算短信〔日本基準〕（連結）,2026-01-20 15:30:00,"DurationPeriod(start_date=datetime.date(2024, 1, 1), end_date=datetime.date(2024, 12, 31))",True,30219000000,20304000000,2930000000,3025000000,1969000000,132.34,26715000000,21650000000,8862000000,,3366000000,-1436000000,-403000000,0.095,0.118
-86130,丸三証,2026年3月期 第3四半期 決算速報値に関するお知らせ,2026-01-20 15:30:00,,True,14348000000,,2879000000,3383000000,,44.35,,,,,,,,,
-89600,Ｒ－ユナイテド,2025年11月期　決算短信（REIT）,2026-01-20 15:30:00,"DurationPeriod(start_date=datetime.date(2025, 6, 1), end_date=datetime.date(2025, 11, 30))",True,28180000000,,13717574000,12288271000,,4012,729961000000,,50241784000,,15880000000,-7919000000,-14879000000,,0.017
-60630,ＥＡＪ,通期連結業績予想の修正に関するお知らせ,2026-01-20 15:00:00,"DurationPeriod(start_date=datetime.date(2025, 1, 1), end_date=datetime.date(2025, 12, 31))",True,2908000000,,52000000,63000000,48000000,19.06,,,,,,,,,

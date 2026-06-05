@@ -1,6 +1,0 @@
-code,company_name,title,pubdate,fiscal_period,consolidated,revenue,gross_profit,operating_income,ordinary_income,net_income_parent,eps,total_assets,shareholders_equity,cash_and_equivalents,interest_bearing_debt,operating_cf,investing_cf,financing_cf,roe,roa
-36640,Ｇ－モブキャストＨＤ,(訂正・数値データの訂正)「2024年12月期第３四半期決算短信〔日本基準〕(連結)」の一部訂正について,2024-11-18 16:30:00,"DurationPeriod(start_date=datetime.date(2023, 1, 1), end_date=datetime.date(2023, 9, 30))",True,2326148000,1464763000,-63764000,-80837000,-36000000,-0.81,2172000000,288000000,,,,,,,
-34720,Ｒ－日本ホテル＆レジ,2024年11月期及び2025年5月期の運用状況及び分配金の予想の修正並びに2025年11月期の運用状況及び分配金の予想に関するお知らせ,2024-11-18 16:00:00,,True,1287000000,,568000000,368000000,,1804,,,,,,,,,
-94080,ＢＳＮメディアＨＤ,業績予想の修正に関するお知らせ,2024-11-18 16:00:00,"DurationPeriod(start_date=datetime.date(2024, 4, 1), end_date=datetime.date(2025, 3, 31))",True,23041000000,,1341000000,1527000000,694000000,115.72,,,,,,,,,
-31600,大光,業績予想の修正に関するお知らせ,2024-11-18 15:30:00,"DurationPeriod(start_date=datetime.date(2024, 6, 1), end_date=datetime.date(2024, 11, 30))",True,33690000000,,574000000,605000000,378000000,25.76,,,,,,,,,
-92540,Ｇ－ラバブルマーケ,通期業績予想の修正に関するお知らせ,2024-11-18 14:00:00,"DurationPeriod(start_date=datetime.date(2023, 11, 1), end_date=datetime.date(2024, 10, 31))",True,1025000000,,22000000,25000000,9000000,6.76,,,,,,,,,

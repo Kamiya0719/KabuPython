@@ -1,5 +1,0 @@
-code,company_name,title,pubdate,fiscal_period,consolidated,revenue,gross_profit,operating_income,ordinary_income,net_income_parent,eps,total_assets,shareholders_equity,cash_and_equivalents,interest_bearing_debt,operating_cf,investing_cf,financing_cf,roe,roa
-34900,アズ企画設計,2026年2月期通期業績予想の修正に関するお知らせ,2026-02-17 17:30:00,"DurationPeriod(start_date=datetime.date(2025, 3, 1), end_date=datetime.date(2026, 2, 28))",True,12430000000,,975000000,740000000,461000000,383.89,,,,,,,,,
-14010,Ｇ－エムビーエス,配当予想の修正に関するお知らせ,2026-02-17 17:00:00,,True,,,,,,,,,,,,,,,
-25850,ライフドリンクＣ,(訂正・数値データ訂正)「2026年３月期 第３四半期決算短信〔日本基準〕（連結）」の一部訂正について,2026-02-17 16:00:00,"DurationPeriod(start_date=datetime.date(2025, 4, 1), end_date=datetime.date(2025, 12, 31))",True,40672000000,,4622000000,4532000000,3080000000,59.07,40156000000,16005000000,,,,,,,
-34870,Ｒ－ＣＲＥロジ,2025年12月期 決算短信（REIT）,2026-02-17 15:30:00,"DurationPeriod(start_date=datetime.date(2025, 7, 1), end_date=datetime.date(2025, 12, 31))",True,4762000000,,2645105000,2230446000,,3623,156759000000,,2983739000,,3577000000,-140000000,-3363000000,,0.014

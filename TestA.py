@@ -117,7 +117,7 @@ def is_404_error(exception: Exception) -> bool:
 def retry_on_404(
     func,
     *args,
-    retries: int = 3,
+    retries: int = 1,
     wait_seconds: float = 1.0,
     log_root: Path | None = None,
     description: str | None = None,
@@ -130,11 +130,6 @@ def retry_on_404(
         except Exception as e:
             if not is_404_error(e):
                 raise
-            msg = f"[RETRY {attempt}/{retries}] {description} failed with 404: {e}"
-            #print(msg)
-            traceback.print_exc()
-            if log_root is not None:
-                log_error(msg, log_root)
             if attempt == retries:
                 raise
             time.sleep(wait_seconds)
@@ -147,7 +142,7 @@ def process_tdnet(date_str, log_root: Path | None = None):
             tdnet.documents,
             date_str,
             has_xbrl=True,
-            retries=3,
+            retries=1,
             wait_seconds=1.0,
             log_root=log_root,
             description=f"tdnet.documents for {date_str}",
@@ -179,18 +174,6 @@ def process_tdnet(date_str, log_root: Path | None = None):
     df = df[meta_cols + fin_cols]
 
     return df, filings
-
-# ----------------------------------------
-# 4. 日付ループユーティリティ
-# 指定年の全日付を YYYYMMDD 形式の文字列で生成する
-
-def get_date_strings_for_year(year):
-    current = date(year, 5, 1)
-    end = date(year, 5, 2)
-    while current <= end:
-        yield current.strftime("%Y%m%d")
-        current += timedelta(days=1)
-
 
 # ----------------------------------------
 # 5. 年単位の処理
@@ -413,11 +396,6 @@ def fetch_pdf_with_fallback(filing, log_root: Path | None = None):
     
     for url_type, url in urls_to_try:
         try:
-            msg = f"[PDF FALLBACK] Attempting {url_type}: {url[:60]}..."
-            print(msg)
-            if log_root is not None:
-                log_error(msg, log_root)
-            
             response = requests.get(
                 url,
                 headers=headers,
@@ -431,11 +409,6 @@ def fetch_pdf_with_fallback(filing, log_root: Path | None = None):
             
             # PDFデータか確認
             if content_type.startswith("application/pdf"):
-                msg = f"[PDF FALLBACK SUCCESS] {url_type}: {url}"
-                print(msg)
-                if log_root is not None:
-                    log_error(msg, log_root)
-                
                 class DownloadResult:
                     def __init__(self, data):
                         self.data = data
@@ -444,30 +417,13 @@ def fetch_pdf_with_fallback(filing, log_root: Path | None = None):
             
             # ZIPファイルか確認
             elif content_type.startswith("application/zip"):
-                msg = f"[PDF FALLBACK] ZIP file detected, extracting PDF..."
-                print(msg)
-                if log_root is not None:
-                    log_error(msg, log_root)
-                
                 result = extract_pdf_from_zip(response.content, log_root=log_root)
                 if result is not None:
-                    msg = f"[PDF FALLBACK SUCCESS] Extracted PDF from ZIP ({url_type})"
-                    print(msg)
-                    if log_root is not None:
-                        log_error(msg, log_root)
                     return result
-            
-            else:
-                msg = f"[PDF FALLBACK] Unsupported content-type: {content_type}"
-                print(msg)
-                if log_root is not None:
-                    log_error(msg, log_root)
         
-        except Exception as e:
-            msg = f"[PDF FALLBACK ERROR] {url_type}: {type(e).__name__}: {e}"
-            print(msg)
-            if log_root is not None:
-                log_error(msg, log_root)
+        except Exception:
+            # エラーは無視してスキップ（古いPDFなど確実に失敗するケース対応）
+            pass
     
     return None
 
@@ -484,26 +440,12 @@ def extract_pdf_text(filing, log_root: Path | None = None) -> str | None:
             log_root=log_root,
             description=f"filing.fetch_pdf for {filing.company_code} {filing.title}",
         )
-    except Exception as e:
-        msg = f"[PDF FETCH ERROR] {filing.company_code} {filing.title}: {type(e).__name__}: {e}"
-        print(msg)
-        traceback.print_exc()
-        if log_root is not None:
-            log_error(msg, log_root)
-        
+    except Exception:
         # 第2段階：requestsでのフォールバック処理
-        msg = f"[PDF FALLBACK] Attempting direct request for {filing.company_code} {filing.title}"
-        print(msg)
-        if log_root is not None:
-            log_error(msg, log_root)
-        
         result = fetch_pdf_with_fallback(filing, log_root=log_root)
     
     if result is None:
-        msg = f"[PDF FETCH FAILED] {filing.company_code} {filing.title}: All methods failed"
-        print(msg)
-        if log_root is not None:
-            log_error(msg, log_root)
+        # ログは記録しない（古いPDFは確実に失敗するため）
         return None
 
     try:
@@ -597,6 +539,17 @@ def process_pdf_files(
         meta_path.parent.mkdir(parents=True, exist_ok=True)
         meta_df = pd.DataFrame(meta_rows)
         meta_df.to_csv(meta_path, index=False, encoding="utf-8")
+
+# ----------------------------------------
+# 4. 日付ループユーティリティ
+# 指定年の全日付を YYYYMMDD 形式の文字列で生成する
+
+def get_date_strings_for_year(year):
+    current = date(year, 4, 1)
+    end = date(year, 6, 30)
+    while current <= end:
+        yield current.strftime("%Y%m%d")
+        current += timedelta(days=1)
 
 # ----------------------------------------
 # 5. 実行例

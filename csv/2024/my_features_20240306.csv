@@ -1,8 +1,0 @@
-code,company_name,title,pubdate,fiscal_period,consolidated,revenue,gross_profit,operating_income,ordinary_income,net_income_parent,eps,total_assets,shareholders_equity,cash_and_equivalents,interest_bearing_debt,operating_cf,investing_cf,financing_cf,roe,roa
-26940,焼肉坂井ＨＤ,2024年３月期配当予想の決定に関するお知らせ,2024-03-06 16:30:00,,True,,,,,,,,,,,,,,,
-71960,Ｃａｓａ,2024年1月期 決算短信〔日本基準〕（連結）,2024-03-06 16:30:00,"DurationPeriod(start_date=datetime.date(2022, 2, 1), end_date=datetime.date(2023, 1, 31))",True,11224085000,6137655000,786757000,965869000,605000000,60.35,14776000000,7232000000,3703890000,,1140000000,-11000000,-314000000,0.086,0.069
-67750,ＴＢグループ,通期連結業績予想の修正に関するお知らせ,2024-03-06 16:00:00,"DurationPeriod(start_date=datetime.date(2023, 4, 1), end_date=datetime.date(2024, 3, 31))",True,2347000000,,-261000000,-243000000,,-22.94,,,,,,,,,
-96970,カプコン,配当予想の修正（増配）に関するお知らせ,2024-03-06 16:00:00,,True,,,,,,,,,,,,,,,
-70640,Ｇ－ハウテレビジョン,2024年1月期 決算短信〔日本基準〕（非連結）,2024-03-06 15:00:00,"DurationPeriod(start_date=datetime.date(2023, 2, 1), end_date=datetime.date(2024, 1, 31))",True,1842042000,1497165000,406936000,404861000,,222.24,1910000000,1044000000,1424959000,,420000000,-131000000,504000000,0.337,0.268
-70640,Ｇ－ハウテレビジョン,連結決算への移行に伴う連結業績予想の公表に関するお知らせ,2024-03-06 15:00:00,"DurationPeriod(start_date=datetime.date(2024, 2, 1), end_date=datetime.date(2025, 1, 31))",True,,,,,,,,,,,,,,,
-66940,ズーム,（訂正・数値データ訂正）「2023年12月期決算短信〔日本基準〕（連結）」の一部訂正に関するお知らせ,2024-03-06 11:30:00,"DurationPeriod(start_date=datetime.date(2022, 1, 1), end_date=datetime.date(2022, 12, 31))",True,17901459000,7069611000,573610000,649485000,88000000,20.64,19260000000,6662000000,2826168000,,817000000,-2443000000,2231000000,0.014,0.039

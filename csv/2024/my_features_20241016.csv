@@ -1,9 +1,0 @@
-code,company_name,title,pubdate,fiscal_period,consolidated,revenue,gross_profit,operating_income,ordinary_income,net_income_parent,eps,total_assets,shareholders_equity,cash_and_equivalents,interest_bearing_debt,operating_cf,investing_cf,financing_cf,roe,roa
-88940,ＲＥＶＯＬＵＴＩＯＮ,2024年10月期通期の業績予想の修正,2024-10-16 18:00:00,"DurationPeriod(start_date=datetime.date(2023, 11, 1), end_date=datetime.date(2024, 10, 31))",True,2403000000,,-415000000,-408000000,-372000000,-0.84,,,,,,,,,
-219A0,Ｇ－ハートシード,2024年10月期業績予想の修正に関するお知らせ,2024-10-16 15:30:00,,True,344000000,,-1459000000,-1456000000,,-106.81,,,,,,,,,
-32950,Ｒ－ヒューリックＲＥ,2024年8期 決算短信（ＲＥＩＴ）,2024-10-16 15:15:00,"DurationPeriod(start_date=datetime.date(2024, 3, 1), end_date=datetime.date(2024, 8, 31))",True,11504000000,,6066417000,5257432000,,3650,410384000000,,24727009000,,10932000000,-3108000000,-5675000000,,0.013
-29720,Ｒ－サンケイＲＥ,2024年８月期　決算短信（ＲＥＩＴ）,2024-10-16 15:00:00,"DurationPeriod(start_date=datetime.date(2024, 3, 1), end_date=datetime.date(2024, 8, 31))",True,2461000000,,1299972000,1107573000,,2369,104878000000,,7444330000,,1983000000,-10516000000,-1037000000,,0.011
-43860,ＳＩＧグループ,2025年３月期第２四半期（累計）連結業績予想の修正に関するお知らせ,2024-10-16 15:00:00,"DurationPeriod(start_date=datetime.date(2024, 4, 1), end_date=datetime.date(2024, 9, 30))",True,3430000000,,183000000,146000000,64000000,11.46,,,,,,,,,
-43720,Ｇ－ユミルリンク,配当方針の変更及び配当予想の修正（初配当・記念配当）に関するお知らせ,2024-10-16 14:00:00,,True,,,,,,,,,,,,,,,
-43720,Ｇ－ユミルリンク,連結決算への移行に伴う連結業績予想の公表に関するお知らせ,2024-10-16 14:00:00,"DurationPeriod(start_date=datetime.date(2024, 1, 1), end_date=datetime.date(2024, 12, 31))",True,,,,,,,,,,,,,,,
-87060,極東証券,2025年3月期 第2四半期（中間期）連結業績速報値に関するお知らせ,2024-10-16 11:30:00,"DurationPeriod(start_date=datetime.date(2024, 4, 1), end_date=datetime.date(2024, 9, 30))",True,,,1548000000,2070000000,2385000000,74.77,,,,,,,,,
