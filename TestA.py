@@ -82,19 +82,30 @@ def extract_xbrl_features(filing, log_root: Path | None = None):
         "consolidated": consolidated,
     }
 
-    # 財務データ（current）
+    # 財務データは当期と前期の両方を取得しておく
     try:
-        fin = extract_values(
+        # 期間フィルタ無しで全 CK を取得し、当期の値を優先して保存
+        fin_all = extract_values(
             stmts,
-            FIN_KEYS,
-            period="current",
-            consolidated=True
+            period=None,
+            consolidated=True,
         )
-        fin = extracted_to_dict(fin)
+        fin = extracted_to_dict(fin_all)
+
+        # 前期だけを別途取得し、prior サフィックス付きで保存
+        fin_prior = extracted_to_dict(
+            extract_values(
+                stmts,
+                period="prior",
+                consolidated=True,
+            )
+        )
+        for key, value in fin_prior.items():
+            if value is not None:
+                fin[f"{key}_prior"] = value
     except Exception as e:
         print(f"[EXTRACT ERROR] {filing.company_code}: {e}")
         raise
-
 
     # 結合
     return {**meta, **fin}
@@ -230,6 +241,143 @@ def save_to_csv(df: pd.DataFrame, output_path: str) -> None:
     path = Path(output_path)
     path.parent.mkdir(parents=True, exist_ok=True)
     df.to_csv(path, index=False)
+
+
+def filter_features_by_keys(input_csv: str | Path, output_csv: str | Path, keys: list[str] | None = None) -> None:
+    """
+    既に保存された特徴量CSVから、メタ情報 + 指定の財務指標だけを抽出して保存するユーティリティ。
+    keys を None にすると `FIN_KEYS` を使用します。
+    """
+    keys = keys or FIN_KEYS
+    keys = [str(k) for k in keys]
+    meta_cols = ["code", "company_name", "title", "pubdate", "fiscal_period", "consolidated"]
+    df = pd.read_csv(input_csv)
+    # 存在する列のみを選択。prior 列も含める。
+    selected = []
+    for c in meta_cols:
+        if c in df.columns:
+            selected.append(c)
+    for key in keys:
+        if key in df.columns:
+            selected.append(key)
+        prior_key = f"{key}_prior"
+        if prior_key in df.columns:
+            selected.append(prior_key)
+    out_df = df[selected]
+    out_path = Path(output_csv)
+    out_path.parent.mkdir(parents=True, exist_ok=True)
+    out_df.to_csv(out_path, index=False)
+
+
+def extract_text_from_saved_pdfs(meta_csv: str | Path, base_root: str | Path | None = None) -> None:
+    """
+    保存済みのPDFメタデータCSVから、各PDFファイルのテキストを抽出して保存する。
+    base_root が None の場合、meta_csv と同じ csv フォルダを基準とします。
+    """
+    meta_path = Path(meta_csv)
+    if base_root is None:
+        base_root = meta_path.parent.parent.parent
+    base_root = Path(base_root)
+    
+    df_meta = pd.read_csv(meta_csv)
+    text_dir = base_root / "pdf_text"
+    text_rows = []
+    
+    print(f"extract_text_from_saved_pdfs: processing {len(df_meta)} PDFs...")
+    for idx, row in df_meta.iterrows():
+        pdf_path = Path(row["pdf_path"])
+        if not pdf_path.exists():
+            print(f"  [WARN] PDF not found: {pdf_path}")
+            continue
+        
+        try:
+            with fitz.open(stream=pdf_path.read_bytes(), filetype="pdf") as doc:
+                pages = [page.get_text("text") for page in doc]
+            text = "\n".join(pages).strip()
+        except Exception as e:
+            # PDF処理失敗時、テキストとして処理を試みる
+            try:
+                text = pdf_path.read_bytes().decode('utf-8', errors='ignore')
+                if not text.strip():
+                    print(f"  [WARN] Could not extract text from {pdf_path}: {type(e).__name__}")
+                    continue
+            except Exception:
+                print(f"  [WARN] Could not process {pdf_path}: {type(e).__name__}: {e}")
+                continue
+        
+        # テキストを同じディレクトリ構造で保存
+        rel_pdf = pdf_path.relative_to(base_root / "pdf_files")
+        text_path = text_dir / rel_pdf.with_suffix(".txt")
+        save_pdf_text(text, text_path)
+        
+        text_rows.append({
+            "code": row["code"],
+            "company_name": row["company_name"],
+            "title": row["title"],
+            "pubdate": row["pubdate"],
+            "text_path": str(text_path),
+        })
+    
+    if text_rows:
+        # メタデータを pdf_metadata フォルダに保存
+        meta_dir = meta_path.parent
+        text_meta_path = meta_dir / meta_path.name.replace("pdf_meta_", "pdf_text_meta_")
+        text_meta_path.parent.mkdir(parents=True, exist_ok=True)
+        pd.DataFrame(text_rows).to_csv(text_meta_path, index=False, encoding="utf-8")
+        print(f"  saved text metadata: {text_meta_path}")
+
+
+def extract_words_from_saved_text(text_meta_csv: str | Path, base_root: str | Path | None = None) -> None:
+    """
+    抽出済みテキストファイルから単語を抽出して CSV として保存する。
+    base_root が None の場合、text_meta_csv と同じ csv フォルダを基準とします。
+    """
+    text_meta_path = Path(text_meta_csv)
+    if base_root is None:
+        base_root = text_meta_path.parent.parent.parent
+    base_root = Path(base_root)
+    
+    df_text = pd.read_csv(text_meta_csv)
+    word_dir = base_root / "pdf_words"
+    word_rows = []
+    
+    print(f"extract_words_from_saved_text: processing {len(df_text)} texts...")
+    for idx, row in df_text.iterrows():
+        text_path = Path(row["text_path"])
+        if not text_path.exists():
+            print(f"  [WARN] Text file not found: {text_path}")
+            continue
+        
+        try:
+            text = text_path.read_text(encoding="utf-8")
+            words = extract_pdf_words(text)
+        except Exception as e:
+            print(f"  [WARN] Could not extract words from {text_path}: {type(e).__name__}: {e}")
+            continue
+        
+        # 単語CSVを保存
+        word_path = word_dir / text_path.relative_to(base_root / "pdf_text").with_suffix("_words.csv")
+        save_pdf_words(words, word_path)
+        
+        word_rows.append({
+            "code": row["code"],
+            "company_name": row["company_name"],
+            "title": row["title"],
+            "pubdate": row["pubdate"],
+            "text_path": row["text_path"],
+            "word_path": str(word_path),
+            "word_count": len(words),
+        })
+    
+    if word_rows:
+        # メタデータを保存
+        meta_dir = text_meta_path.parent
+        word_meta_path = meta_dir / text_meta_path.name.replace("pdf_text_meta_", "pdf_word_meta_")
+        word_meta_path.parent.mkdir(parents=True, exist_ok=True)
+        pd.DataFrame(word_rows).to_csv(word_meta_path, index=False, encoding="utf-8")
+        print(f"  saved word metadata: {word_meta_path}")
+
+
 
 
 def sanitize_filename(text: str, max_length: int = 120) -> str:
@@ -497,6 +645,14 @@ def save_pdf_words(words: list[str], output_path: Path) -> None:
     pd.DataFrame({"word": words}).to_csv(output_path, index=False, encoding="utf-8")
 
 
+def save_pdf_binary(pdf_data: bytes, output_path: Path) -> None:
+    """
+    PDFファイルをバイナリとして保存する
+    """
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+    output_path.write_bytes(pdf_data)
+
+
 def process_pdf_files(
     filings,
     year: int,
@@ -504,23 +660,33 @@ def process_pdf_files(
     base_root: Path,
     log_root: Path | None = None,
 ) -> None:
-    text_root = base_root / "pdf_text" / str(year) / date_str
-    word_root = base_root / "pdf_words" / str(year) / date_str
+    """
+    PDFをファイルとして保存し、メタデータを記録する。
+    テキスト・単語抽出は別途 extract_text_from_saved_pdfs() で実施する。
+    """
+    pdf_root = base_root / "pdf_files" / str(year) / date_str
     meta_rows = []
 
     print(f"process_pdf_files {len(filings)} filings...")
     for filing in filings:
         filename_base = f"{filing.company_code}_{sanitize_filename(filing.title or filing.document_url or filing.xbrl_url)}"
-        pdf_text = extract_pdf_text(filing, log_root=log_root)
-        if pdf_text is None:
+        try:
+            pdf_result = retry_on_404(
+                filing.fetch_pdf,
+                retries=1,
+                wait_seconds=1.0,
+                log_root=log_root,
+                description=f"filing.fetch_pdf for {filing.company_code} {filing.title}",
+            )
+        except Exception:
+            # フォールバック処理を試行
+            pdf_result = fetch_pdf_with_fallback(filing, log_root=log_root)
+        
+        if pdf_result is None:
             continue
 
-        text_path = text_root / f"{filename_base}.txt"
-        word_path = word_root / f"{filename_base}_words.csv"
-
-        save_pdf_text(pdf_text, text_path)
-        words = extract_pdf_words(pdf_text)
-        save_pdf_words(words, word_path)
+        pdf_path = pdf_root / f"{filename_base}.pdf"
+        save_pdf_binary(pdf_result.data, pdf_path)
 
         meta_rows.append(
             {
@@ -528,9 +694,7 @@ def process_pdf_files(
                 "company_name": filing.company_name,
                 "title": filing.title,
                 "pubdate": filing.pubdate,
-                "text_path": str(text_path),
-                "word_path": str(word_path),
-                "word_count": len(words),
+                "pdf_path": str(pdf_path),
             }
         )
 
@@ -545,8 +709,8 @@ def process_pdf_files(
 # 指定年の全日付を YYYYMMDD 形式の文字列で生成する
 
 def get_date_strings_for_year(year):
-    current = date(year, 4, 1)
-    end = date(year, 6, 30)
+    current = date(year, 1, 1)
+    end = date(year, 12, 31)
     while current <= end:
         yield current.strftime("%Y%m%d")
         current += timedelta(days=1)
@@ -557,7 +721,7 @@ def get_date_strings_for_year(year):
 # ----------------------------------------
 if __name__ == "__main__":
     #year = int(sys.argv[1]) if len(sys.argv) > 1 else 2026
-    year = 2026
+    year = 2023
     output_root = Path(__file__).resolve().parent / "csv"
     process_year(year, output_root)
 
