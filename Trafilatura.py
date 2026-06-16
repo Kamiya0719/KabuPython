@@ -5,7 +5,9 @@ from Labeling import classify_news
 import csv
 import os
 import time
-
+import re
+import unicodedata
+from bs4 import BeautifulSoup
 
 
 
@@ -50,7 +52,7 @@ def SetLabelReason(input_csv, output_csv, num=100):
 
             writer.writerow(row)
 
-    #os.replace(output_csv, input_csv)
+    os.replace(output_csv, input_csv)
 
 
 # GDELTデータのURLからニュースのタイトルとテキストを抽出して保存する関数
@@ -74,7 +76,9 @@ def SetTitleText(input_csv, output_csv):
                 data = extract_article_with_metadata(url)
                 if data is not None:
                     title = data.get("title") or ""
+                    title = TextReplace(title)
                     text = data.get("text") or ""
+                    text = TextReplace(text)
                     if len(title) > 100:
                         title = title[:100]
                     if len(text) > 500:
@@ -88,6 +92,104 @@ def SetTitleText(input_csv, output_csv):
             writer.writerow(row)
 
     #os.replace(output_csv, input_csv)
+
+
+# デバッグ用あれこれ
+def ExecDebug(input_csv, output_csv):
+    with open(input_csv, "r", newline="", encoding="utf-8") as fin, \
+        open(output_csv, "w", newline="", encoding="utf-8") as fout:
+
+        reader = csv.reader(fin)
+        writer = csv.writer(fout)
+        start = time.time()
+
+        for i, row in enumerate(reader):
+            # Ensure the row has at least 11 columns (indices 0..10)
+            while len(row) < 11:
+                row.append("")
+
+            # 1行目はヘッダーなのでスキップ
+            if i != 0 :
+                row[7] = TextReplace(row[7])
+                row[7] = row[7].replace(",", " ")
+                row[8] = TextReplace(row[8])
+                row[8] = row[8].replace(",", " ")
+                if row[9] == "NoData":
+                    row[9] = "NODATA"
+                if row[9] == "1. Micro":
+                    row[9] = "Micro"
+                if row[9] not in LABELS:
+                    row[9] = ""
+            writer.writerow(row)
+
+    #os.replace(output_csv, input_csv)
+
+
+# テキストをクリーンアップする関数
+def TextReplace(text: str) -> str:
+    # タイトルと本文を結合
+    raw = text
+    # HTMLタグ除去
+    raw = BeautifulSoup(raw, "html.parser").get_text()
+    # 改行 → スペース
+    raw = raw.replace("\n", " ").replace("\r", " ")
+    # 全角半角正規化
+    raw = unicodedata.normalize("NFKC", raw)
+    # 不要な記号の簡易除去（株価予測ではノイズになりやすい）
+    raw = re.sub(r"[■◆▲▽▶◀★☆●○◎◇◆※]", " ", raw)
+    # 連続スペースを 1 個に圧縮
+    raw = re.sub(r"\s+", " ", raw).strip()
+    return raw
+
+
+LABELS = [
+    "Micro",
+    "Sector Macro",
+    "Country Macro",
+    "Global Macro",
+    "Mixed",
+    "Other",
+    "NODATA"
+]
+def CsvDispDebug(input_csv, num=10):
+    with open(input_csv, "r", newline="", encoding="utf-8") as fin:
+        reader = csv.reader(fin)
+        cnt = 0
+        labelInfos = {}
+        for i, row in enumerate(reader):
+            if i == 0:
+                continue
+            label = row[9]
+            #if label is not None and label != "":
+            if label != "" and label not in LABELS:
+                print(f"Unexpected label at line {i}: '{label}'")
+                continue
+
+            labelInfos[label] = labelInfos.get(label, 0) + 1
+        for label, count in labelInfos.items():
+            print(f"Label: {label}, Count: {count}")
+
+
+
+def CheckMicroOrgan(input_csv, num=10):
+    with open(input_csv, "r", newline="", encoding="utf-8") as fin:
+        reader = csv.reader(fin)
+        cnt = 0
+        labelInfos = {}
+        for i, row in enumerate(reader):
+            if i == 0:
+                continue
+            label = row[9]
+            if label != "Micro":
+                continue
+            themes = row[4]
+            organizations = row[5]
+
+            labelInfos[label] = labelInfos.get(label, 0) + 1
+        for label, count in labelInfos.items():
+            print(f"Label: {label}, Count: {count}")
+
+
 
 
 """
@@ -126,15 +228,17 @@ def SetTitleText(input_csv, output_csv):
 """
 
 
-#for i in range(0, 1):
+for i in range(0, 15):
     # 特定日付のurl・テーマ・組織　のデータを処理して、ラベルと理由をCSVに保存する
-#    inputPath = r"C:\Users\ojiro\Documents\KabuCSharp\KabuCSharp\KabuCSharp\csv\JQuants\GdeltGkg\20260525.csv"
-#    outputPath = r"C:\Users\ojiro\Documents\KabuCSharp\KabuCSharp\KabuCSharp\csv\JQuants\GdeltGkg\20260525Hoge.csv"
-#    Kari(inputPath, outputPath, start=i*100, end=(i+1)*100-1)
+    inputPath = r"C:\Users\ojiro\Documents\PythonFolder\KabuPython\20260525.csv"
+    outputPath = r"C:\Users\ojiro\Documents\PythonFolder\KabuPython\20260525Hoge.csv"
+    SetLabelReason(inputPath, outputPath, 300)
 
 
 
 # 特定日付のurl・テーマ・組織　のデータを処理して、ラベルと理由をCSVに保存する
 inputPath = r"C:\Users\ojiro\Documents\PythonFolder\KabuPython\20260525.csv"
 outputPath = r"C:\Users\ojiro\Documents\PythonFolder\KabuPython\20260525Hoge.csv"
-SetLabelReason(inputPath, outputPath, 10)
+#SetLabelReason(inputPath, outputPath)
+CsvDispDebug(inputPath)
+
