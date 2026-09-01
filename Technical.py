@@ -32,6 +32,7 @@ PRED_FEATURES = [
 ]
 
 TECHNICAL_SCORE_GLOB = "C:/Users/ojiro/Documents/KabuCSharp/KabuCSharp/KabuCSharp/csv/Debug/TechnicalScore/*.csv"
+MODEL_BASE = "C:/Users/ojiro/Documents/PythonFolder/KabuPython"
 
 def saveModel(type):
     # 1. CSV を読み込む
@@ -65,7 +66,7 @@ def saveModel(type):
         )
 
         # 追加：特徴量リストを保存
-        with open(f"{t}_features.txt", "w") as f:
+        with open(f"{MODEL_BASE}/{t}_features.txt", "w") as f:
             for feat in selected:
                 f.write(feat + "\n")
 
@@ -149,7 +150,7 @@ def saveModel(type):
 
         if len(y_eval) == 0:
             print(f"[{t}] Hit Rate: N/A (評価可能なデータがありません)")
-            model.save_model(t + "model.txt")
+            model.save_model(f"{MODEL_BASE}/{t}model.txt")
             continue
 
         # --- 上位25%・下位25% の閾値 ---
@@ -182,7 +183,7 @@ def saveModel(type):
         print(disp + f"\n\n")
 
 
-        model.save_model(t + "model.txt")
+        model.save_model(f"{MODEL_BASE}/{t}model.txt")
 
 
 
@@ -263,7 +264,18 @@ def auto_feature_selection(all_df, target_name, base_features, threshold_ratio=0
 
 
 
-def predict_and_save(type, input_csv, output_csv=None, model_dir="."):
+def _normalize_date_idx(date_idx):
+    """dateIdx 指定を正規化して、1つでも複数でも扱えるようにする。"""
+    if date_idx is None:
+        return None
+    if isinstance(date_idx, (list, tuple, set, pd.Index)):
+        values = list(date_idx)
+    else:
+        values = [date_idx]
+    return {pd.to_numeric(value, errors="raise") for value in values}
+
+
+def predict_and_save(type, input_csv, output_csv=None, model_dir=".", date_idx=None):
     """保存済みモデルでCSVを予測し、予測列を末尾に追加して保存する。"""
     input_path = Path(input_csv)
 
@@ -274,8 +286,14 @@ def predict_and_save(type, input_csv, output_csv=None, model_dir="."):
         output_path = Path(output_csv)
 
     df = pd.read_csv(input_path)
+    if "dateIdx" not in df.columns:
+        raise ValueError(f"{input_csv} に dateIdx 列がありません")
+
     df = add_technical_features(df)
     model_dir = Path(model_dir)
+
+    target_date_idx = _normalize_date_idx(date_idx)
+    target_mask = None if target_date_idx is None else df["dateIdx"].isin(target_date_idx)
 
     targets = ["futureStability", "futureUp", "futureFall","nextHigh", "nextLow"]
     if type == 2:
@@ -291,31 +309,40 @@ def predict_and_save(type, input_csv, output_csv=None, model_dir="."):
         if missing_features:
             raise ValueError(f"{input_csv} に必要な特徴量列がありません: {missing_features}")
 
-        model_path = model_dir / f"{t}model.txt"
+        model_path = Path(f"{MODEL_BASE}/{t}model.txt")
         if not model_path.exists():
             raise FileNotFoundError(f"保存済みモデルが見つかりません: {model_path}")
 
         model = lgb.Booster(model_file=str(model_path))
 
         # 特徴量リストを読み込む
-        with open(model_dir / f"{t}_features.txt", "r") as f:
+        with open(Path(MODEL_BASE) / f"{t}_features.txt") as f:
             selected_features = [line.strip() for line in f.readlines()]
 
         feature_data = df[selected_features].apply(pd.to_numeric, errors="coerce")
+        if target_mask is not None:
+            feature_data = feature_data.loc[target_mask]
+            if feature_data.empty:
+                continue
         pred = model.predict(feature_data)
         if is_classification:
             pred = pred.argmax(axis=1)
-        df[f"predicted_{t}"] = pred
+            pred = pred + 1
 
-
-
+        pred_values = pred.to_numpy() if hasattr(pred, "to_numpy") else pred
+        if target_mask is not None:
+            if f"predicted_{t}" not in df.columns:
+                df[f"predicted_{t}"] = pd.NA
+            df.loc[target_mask, f"predicted_{t}"] = pred_values
+        else:
+            df[f"predicted_{t}"] = pred_values
 
     # ★ input_csv を上書き保存
     df.to_csv(output_path, index=False)
     return output_path
 
 
-def predict_all(type, output_dir=None, model_dir="."):
+def predict_all(type, output_dir=None, model_dir=".", date_idx=None):
     """TechnicalScoreフォルダ内の全CSVを保存済みモデルで予測する。"""
     files = glob.glob(TECHNICAL_SCORE_GLOB)
     if not files:
@@ -330,7 +357,7 @@ def predict_all(type, output_dir=None, model_dir="."):
     output_paths = []
     for input_csv in files:
         output_csv = output_dir / Path(input_csv).name
-        output_paths.append(predict_and_save(type, input_csv, output_csv, model_dir))
+        output_paths.append(predict_and_save(type, input_csv, output_csv, model_dir, date_idx=date_idx))
     return output_paths
 
 def add_technical_features(df):
@@ -374,6 +401,7 @@ def main():
     parser = argparse.ArgumentParser(description="テクニカル分析モデルの保存と予測")
     parser.add_argument("action", choices=["save", "predict"], help="実行する処理")
     parser.add_argument("type", type=int, help="タイプ")
+    parser.add_argument("--date-idx", nargs="*", type=int, default=None, help="予測対象の dateIdx を指定する。未指定時は全行を対象にする")
     parser.add_argument("--output-dir",default=None,help="predict時の出力先フォルダ（省略時: TechnicalScore/predicted）")
     parser.add_argument("--model-dir",default=".",help="モデルファイルのフォルダ（省略時: カレントフォルダ）")
     args = parser.parse_args()
@@ -381,7 +409,7 @@ def main():
     if args.action == "save":
         saveModel(args.type)
     else:
-        predict_all(args.type, args.output_dir, args.model_dir)
+        predict_all(args.type, args.output_dir, args.model_dir, date_idx=args.date_idx)
 
 
 if __name__ == "__main__":
