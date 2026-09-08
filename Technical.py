@@ -4,62 +4,64 @@ import lightgbm as lgb
 import glob
 import argparse
 from pathlib import Path
+import numpy as np
 
-
-# テクニカル分析の指標から未来値予測を行う学習モデルを生成。
+# === 設定 ===
+TECHNICAL_SCORE_GLOB = "C:/Users/ojiro/Documents/KabuCSharp/KabuCSharp/KabuCSharp/csv/Debug/TechnicalScore/*.csv"
+MODEL_BASE = "C:/Users/ojiro/Documents/PythonFolder/KabuPython"
 
 ALL_FEATURES = [
     "dateIdx", "HistoricalVorality", "RollingStd20", "RollingStd60", "ATR", "BollingerBand", "RangeRatio", "VolRollingStd", "VolumeROC",
-    # テクニカル（上昇系）
     "BullishRate","AverageReturn", "AverageRSI", "AverageMACDHistogram", "TrendSlope", "VolumeTrendStrength", "DemandSupplyScore", "BreakoutReliability",
-    # テクニカル（下落系）
     "BigDown", "GapDown", "LowerWick", "PanicSell", "VolumeSpikeScore", "VolumeBasedRisk",
-    # 財務系
     "SalesYoY", "OperatingMargin", "EpsYoY", "ROE", "CFORatio", "EqAR", "PER", "PBR", "MarketCap", "EPS", "CFYYield", "CFO",
-    # 信用・需給系
     "MarginBalanceRatio", "IssType", "MarginLongRatio", "MarginShortRatio", "ShrtPosToSO", "ShortSaleChange", "ShrtPosShares",
     "ShortMarginChange", "LongMarginChange", "OutChgRatio", "SLRatio",
     "close",
     "ROC5", "ROC10", "ROC20",
     "EMA5", "EMA20", "EMA60",
     "EMA5_div", "EMA20_div", "EMA60_div",
-    "MACD_diff", "RSI_delta", "open","high", "low", "yearLowest", "yearHighest", "monthLowest", "monthHighest", "secondMonthHigh", "secondMonthLow", "bunsanLowM",
- "bunsanHighM", "bunsanLowW", "bunsanHighW", "bunsanLowD", "bunsanHighD", "lowHosyou", "highHosyou", 
+    "MACD_diff", "RSI_delta", "open","high", "low", "yearLowest", "yearHighest", "monthLowest", "monthHighest",
+    "secondMonthHigh", "secondMonthLow", "bunsanLowM", "bunsanHighM", "bunsanLowW", "bunsanHighW",
+    "bunsanLowD", "bunsanHighD", "lowHosyou", "highHosyou",
 ]
+
+# 最終予測のpredicted_benefitのために追加する特徴量
 PRED_FEATURES = [
-    "predicted_futureStability","predicted_futureUp","predicted_futureFall","predicted_nextHigh",
-    "predicted_nextLow",
+    "predicted_futureStability","predicted_futureUp","predicted_futureFall",
+    "predicted_nextHigh","predicted_nextLow",
 ]
 
-TECHNICAL_SCORE_GLOB = "C:/Users/ojiro/Documents/KabuCSharp/KabuCSharp/KabuCSharp/csv/Debug/TechnicalScore/*.csv"
-MODEL_BASE = "C:/Users/ojiro/Documents/PythonFolder/KabuPython"
-
-def saveModel(type):
-    # 1. CSV を読み込む
-
+# ============================================================
+# saveModel
+# ============================================================
+def saveModel(type, prediction_dir=None):
     files = glob.glob(TECHNICAL_SCORE_GLOB)
+    if not files:
+        raise FileNotFoundError("学習対象CSVがありません")
 
     dfs = []
     for f in files:
         df = pd.read_csv(f)
-        df["symbol"] = f.split("\\")[-1].replace(".csv", "")
-        df = add_technical_features(df)
+        df["symbol"] = Path(f).stem
+        df = add_technical_features(df, isAllDate=True)
         dfs.append(df)
 
     all_df = pd.concat(dfs, ignore_index=True)
+    if type == 2:
+        all_df = attach_prediction_features(all_df, files, prediction_dir)
     all_df = all_df.replace(-99, pd.NA)
 
     targets = ["futureStability", "futureUp", "futureFall","nextHigh", "nextLow"]
     if type == 2:
-        #targets = ["futureBenefit","futureBenefitDate"]
         targets = ["futureBenefit"]
 
 
     for t in targets:
         base_features = ALL_FEATURES.copy()
-        if type == 2:
+        if t == "futureBenefit":
             base_features += PRED_FEATURES
-        is_classification = type == 2 and t == "futureBenefit"
+        is_classification = t == "futureBenefit"
         selected = auto_feature_selection(
             all_df, t, base_features, threshold_ratio=0.01,
             is_classification=is_classification
@@ -78,13 +80,11 @@ def saveModel(type):
             valid_labels = y.notna() & y.ge(0)
             X = X.loc[valid_labels]
             y = y.loc[valid_labels].astype("int32")
-        #X = all_df[features].apply(pd.to_numeric, errors="coerce")
-        #y = all_df[t].apply(pd.to_numeric, errors="coerce")
 
         # --- 追加：目的変数の分布を表示 ---
         y_desc = y.describe()
         print(f"[{t}] Target Distribution")
-        print(f" min:  {y_desc['min']:.6f}, max:  {y_desc['max']:.6f}, mean: {y_desc['mean']:.6f}, std:  {y_desc['std']:.6f}")
+        print(f" min: {y_desc['min']}, max: {y_desc['max']}, mean: {y_desc['mean']}, std: {y_desc['std']}")
 
         X_train, X_valid, y_train, y_valid = train_test_split(
             X, y, test_size=0.2, random_state=42
@@ -104,7 +104,6 @@ def saveModel(type):
         }
         if is_classification:
             params["num_class"] = int(y.max()) + 1
-        callbacks = [lgb.early_stopping(stopping_rounds=100)]
 
         model = lgb.train(
             params,
@@ -112,7 +111,7 @@ def saveModel(type):
             num_boost_round=2000,
             valid_sets=[train_data, valid_data],
             valid_names=["train", "valid"],
-            callbacks=callbacks
+            callbacks=[lgb.early_stopping(stopping_rounds=100)]
         )
 
         if is_classification:
@@ -156,7 +155,7 @@ def saveModel(type):
         # --- 上位25%・下位25% の閾値 ---
         top_q = 0.75
         bottom_q = 0.25
-        if type == 2:
+        if t == "futureBenefit":
             top_q = 0.97
             bottom_q = 0.86
         y_top_thr = np.quantile(y_eval, top_q)
@@ -186,31 +185,41 @@ def saveModel(type):
         model.save_model(f"{MODEL_BASE}/{t}model.txt")
 
 
+def attach_prediction_features(all_df, technical_files, prediction_dir=None):
+    """予測出力CSVから type==2 用の予測特徴量を元データへ結合する。"""
+    if prediction_dir is None:
+        prediction_dir = Path(technical_files[0]).parent / "daily_predicted"
+    else:
+        prediction_dir = Path(prediction_dir)
 
-def select_features_by_importance(model, feature_names, threshold_ratio=0.01):
-    """
-    LightGBM の特徴量重要度を使って重要な特徴量だけを選択する。
-    threshold_ratio: 重要度の合計に対する割合（例: 0.01 = 上位1%）
-    """
-    importance = model.feature_importance()
-    total_importance = sum(importance)
+    prediction_files = [
+        prediction_dir / f"{Path(technical_file).stem}_pred.csv"
+        for technical_file in technical_files
+    ]
+    existing_files = [path for path in prediction_files if path.exists()]
+    if not existing_files:
+        raise FileNotFoundError(f"予測特徴量CSVがありません: {prediction_dir}")
 
-    selected = []
-    for name, imp in zip(feature_names, importance):
-        if imp / total_importance >= threshold_ratio:
-            selected.append(name)
+    prediction_frames = []
+    for prediction_file in existing_files:
+        prediction_df = pd.read_csv(prediction_file)
+        required_columns = {"symbol", "dateIdx", *PRED_FEATURES}
+        missing_columns = required_columns - set(prediction_df.columns)
+        if missing_columns:
+            raise ValueError(
+                f"予測特徴量CSVに必要な列がありません ({prediction_file}): "
+                f"{sorted(missing_columns)}"
+            )
+        prediction_frames.append(prediction_df[["symbol", "dateIdx", *PRED_FEATURES]])
 
-    return selected
+    predictions = pd.concat(prediction_frames, ignore_index=True)
+    predictions = predictions.drop_duplicates(["symbol", "dateIdx"], keep="last")
+    return all_df.merge(predictions, on=["symbol", "dateIdx"], how="left")
 
-
+# ============================================================
+# 特徴量選択
+# ============================================================
 def auto_feature_selection(all_df, target_name, base_features, threshold_ratio=0.01, is_classification=False):
-    """
-    目的変数ごとに特徴量自動選択を行う。
-    base_features: 最初に使う特徴量リスト
-    threshold_ratio: 重要度の閾値（低いほど特徴量が減る）
-    """
-    #print(f"\n=== Auto Feature Selection for {target_name} ===")
-
     X = all_df[base_features].apply(pd.to_numeric, errors="coerce")
     y = all_df[target_name].apply(pd.to_numeric, errors="coerce")
     if is_classification:
@@ -223,167 +232,191 @@ def auto_feature_selection(all_df, target_name, base_features, threshold_ratio=0
         X, y, test_size=0.2, random_state=42
     )
 
-    train_data = lgb.Dataset(X_train, label=y_train)
-    valid_data = lgb.Dataset(X_valid, label=y_valid)
-
-    params = {
-        "objective": "multiclass" if is_classification else "regression",
-        "metric": "multi_logloss" if is_classification else "rmse",
-        "learning_rate": 0.05,
-        "num_leaves": 64,
-        "feature_fraction": 0.8,
-        "bagging_fraction": 0.8,
-        "bagging_freq": 1,
-    }
-    if is_classification:
-        params["num_class"] = int(y.max()) + 1
-
     model = lgb.train(
-        params,
-        train_data,
+        {
+            "objective": "multiclass" if is_classification else "regression",
+            "metric": "multi_logloss" if is_classification else "rmse",
+            "learning_rate": 0.05,
+            "num_leaves": 64,
+            "feature_fraction": 0.8,
+            "bagging_fraction": 0.8,
+            "bagging_freq": 1,
+            **({"num_class": int(y.max()) + 1} if is_classification else {})
+        },
+        lgb.Dataset(X_train, label=y_train),
         num_boost_round=500,
-        valid_sets=[valid_data],
+        valid_sets=[lgb.Dataset(X_valid, label=y_valid)],
         valid_names=["valid"],
         callbacks=[lgb.early_stopping(stopping_rounds=50)]
     )
 
-    # 特徴量選択
-    selected_features = select_features_by_importance(
-        model,
-        model.feature_name(),
-        threshold_ratio=threshold_ratio
-    )
+    selected = select_features_by_importance(model, model.feature_name(), threshold_ratio)
+    print(f"Selected Features ({len(selected)}): {selected}")
+    return selected
 
-    disp = f"Selected Features ({len(selected_features)}):"
-    for feat in selected_features:
-        disp += f"{feat}, "
-    print(disp)
-
-    return selected_features
+def select_features_by_importance(model, feature_names, threshold_ratio=0.01):
+    importance = model.feature_importance()
+    total_importance = sum(importance)
+    return [name for name, imp in zip(feature_names, importance) if imp / total_importance >= threshold_ratio]
 
 
 
 
-def _normalize_date_idx(date_idx):
-    """dateIdx 指定を正規化して、1つでも複数でも扱えるようにする。"""
-    if date_idx is None:
-        return None
-    if isinstance(date_idx, (list, tuple, set, pd.Index)):
-        values = list(date_idx)
-    else:
-        values = [date_idx]
-    return {pd.to_numeric(value, errors="raise") for value in values}
 
-
-def predict_and_save(type, input_csv, output_csv=None, model_dir=".", date_idx=None):
-    """保存済みモデルでCSVを予測し、予測列を末尾に追加して保存する。"""
-    input_path = Path(input_csv)
-
-    # ★ output_csv が指定されていなければ input_csv を上書きする
-    if output_csv is None:
-        output_path = input_path  # ←ここを変更
-    else:
-        output_path = Path(output_csv)
-
-    df = pd.read_csv(input_path)
-    if "dateIdx" not in df.columns:
-        raise ValueError(f"{input_csv} に dateIdx 列がありません")
-
-    df = add_technical_features(df)
-    model_dir = Path(model_dir)
-
-    target_date_idx = _normalize_date_idx(date_idx)
-    target_mask = None if target_date_idx is None else df["dateIdx"].isin(target_date_idx)
-
-    targets = ["futureStability", "futureUp", "futureFall","nextHigh", "nextLow"]
-    if type == 2:
-        #targets = ["futureBenefit","futureBenefitDate"]
-        targets = ["futureBenefit"]
-    for t in targets:
-        is_classification = type == 2 and t == "futureBenefit"
-        base_features = ALL_FEATURES.copy()
-        if type == 2:
-            base_features += PRED_FEATURES
-
-        missing_features = [feature for feature in base_features if feature not in df.columns]
-        if missing_features:
-            raise ValueError(f"{input_csv} に必要な特徴量列がありません: {missing_features}")
-
-        model_path = Path(f"{MODEL_BASE}/{t}model.txt")
-        if not model_path.exists():
-            raise FileNotFoundError(f"保存済みモデルが見つかりません: {model_path}")
-
-        model = lgb.Booster(model_file=str(model_path))
-
-        # 特徴量リストを読み込む
-        with open(Path(MODEL_BASE) / f"{t}_features.txt") as f:
-            selected_features = [line.strip() for line in f.readlines()]
-
-        feature_data = df[selected_features].apply(pd.to_numeric, errors="coerce")
-        if target_mask is not None:
-            feature_data = feature_data.loc[target_mask]
-            if feature_data.empty:
-                continue
-        pred = model.predict(feature_data)
-        if is_classification:
-            pred = pred.argmax(axis=1)
-            pred = pred + 1
-
-        pred_values = pred.to_numpy() if hasattr(pred, "to_numpy") else pred
-        if target_mask is not None:
-            if f"predicted_{t}" not in df.columns:
-                df[f"predicted_{t}"] = pd.NA
-            df.loc[target_mask, f"predicted_{t}"] = pred_values
-        else:
-            df[f"predicted_{t}"] = pred_values
-
-    # ★ input_csv を上書き保存
-    df.to_csv(output_path, index=False)
-    return output_path
-
-
+# ============================================================
+# 全銘柄 predict（高速版）
+# ============================================================
 def predict_all(type, output_dir=None, model_dir=".", date_idx=None):
-    """TechnicalScoreフォルダ内の全CSVを保存済みモデルで予測する。"""
     files = glob.glob(TECHNICAL_SCORE_GLOB)
     if not files:
-        raise FileNotFoundError(f"予測対象のCSVが見つかりません: {TECHNICAL_SCORE_GLOB}")
+        raise FileNotFoundError("予測対象CSVがありません")
 
     if output_dir is None:
-        output_dir = Path(files[0]).parent #/ "predicted"
+        output_dir = Path(files[0]).parent / "daily_predicted"
     else:
         output_dir = Path(output_dir)
     output_dir.mkdir(parents=True, exist_ok=True)
+    models, features = load_models(type)
 
     output_paths = []
     for input_csv in files:
-        output_csv = output_dir / Path(input_csv).name
-        output_paths.append(predict_and_save(type, input_csv, output_csv, model_dir, date_idx=date_idx))
+        output_csv = output_dir / (Path(input_csv).stem + "_pred.csv")
+        result = predict_and_save(type, input_csv, output_csv, models, features, date_idx)
+        if result is not None:
+            output_paths.append(result)
     return output_paths
 
-def add_technical_features(df):
-    # ROC
+# ============================================================
+# モデルロード（高速化）
+# ============================================================
+def load_models(type):
+    targets = ["futureStability", "futureUp", "futureFall", "nextHigh", "nextLow"]
+    if type == 2:
+        targets.append("futureBenefit")
+    models = {}
+    features = {}
+    for t in targets:
+        models[t] = lgb.Booster(model_file=str(Path(MODEL_BASE) / f"{t}model.txt"))
+        with open(Path(MODEL_BASE) / f"{t}_features.txt") as f:
+            features[t] = [line.strip() for line in f.readlines()]
+
+    return models, features
+
+# ============================================================
+# predict（複数行保存）
+# ============================================================
+def predict_and_save(type, input_csv, output_csv, models, features, date_idx=None):
+    df = pd.read_csv(input_csv) # technicalScore CSV を読み込む
+    isAllDate = date_idx is None
+    df = add_technical_features(df, isAllDate=isAllDate) # テクニカル指標を追加
+
+    if isAllDate: # dateIdx が指定されていない場合は全行を対象
+        target_df = df
+    else:
+        target_df = df[df["dateIdx"].isin(date_idx)]
+    if target_df.empty:
+        return None
+
+    results = []
+    targets = ["futureStability", "futureUp", "futureFall", "nextHigh", "nextLow"]
+    if type == 2:
+        targets.append("futureBenefit")
+
+    previous_predictions = None
+    if type == 2 and Path(output_csv).exists():
+        previous_predictions = pd.read_csv(output_csv).set_index("dateIdx")
+
+    # 各日付で処理を行う
+    for _, row in target_df.iterrows():
+        row_values = row.to_dict()
+        if previous_predictions is not None and row["dateIdx"] in previous_predictions.index:
+            previous_row = previous_predictions.loc[row["dateIdx"]]
+            for feature in PRED_FEATURES:
+                if feature in previous_row and pd.notna(previous_row[feature]):
+                    row_values[feature] = previous_row[feature]
+        row_result = {
+            "symbol": row["symbol"] if "symbol" in df.columns else Path(input_csv).stem,
+            "dateIdx": row["dateIdx"],
+        }
+
+        for t in targets:
+            model = models[t]
+            selected_features = features[t]
+
+            prediction_key = f"predicted_{t}"
+            if type == 2 and t != "futureBenefit" and pd.notna(row_values.get(prediction_key)):
+                predicted_value = float(row_values[prediction_key])
+                if predicted_value != -99:
+                    row_result[prediction_key] = predicted_value
+                    continue
+
+            missing_features = [
+                feature for feature in selected_features if feature not in row_values
+            ]
+            if missing_features:
+                raise ValueError(
+                    f"{t} の予測に必要な特徴量がありません: {missing_features}"
+                )
+            feature_data = pd.DataFrame(
+                [{feature: row_values[feature] for feature in selected_features}
+            ]).astype(float)
+            pred = model.predict(feature_data)
+
+            if type == 2 and t == "futureBenefit":
+                pred = pred.argmax(axis=1) + 1 # 1から始まるクラスラベルに変換
+
+            predicted_value = float(pred[0])
+            row_values[prediction_key] = predicted_value
+            row_result[prediction_key] = predicted_value
+
+        results.append(row_result)
+
+    # === ここから append 保存 ===
+    new_df = pd.DataFrame(results)
+
+    if Path(output_csv).exists():
+        # 既存ファイルを読み込み
+        old_df = pd.read_csv(output_csv)
+
+        # 重複日付を避ける（同じ dateIdx があれば上書き）
+        merged = pd.concat([old_df[~old_df["dateIdx"].isin(new_df["dateIdx"])], new_df], ignore_index=True)
+        merged = merged.sort_values("dateIdx")
+        merged.to_csv(output_csv, index=False)
+    else:
+        # 初回は普通に保存
+        new_df.to_csv(output_csv, index=False)
+
+    return output_csv
+
+
+
+# ============================================================
+# テクニカル指標（直近70日）
+# ============================================================
+def add_technical_features(df, isAllDate=False):
+    if isAllDate:
+        df = df.copy()
+    else:
+        df = df.tail(70).copy()
+
     df["ROC5"] = df["close"].pct_change(5)
     df["ROC10"] = df["close"].pct_change(10)
     df["ROC20"] = df["close"].pct_change(20)
 
-    # EMA
     df["EMA5"] = df["close"].ewm(span=5).mean()
     df["EMA20"] = df["close"].ewm(span=20).mean()
     df["EMA60"] = df["close"].ewm(span=60).mean()
 
-    # EMA乖離率
     df["EMA5_div"] = (df["close"] - df["EMA5"]) / df["EMA5"]
     df["EMA20_div"] = (df["close"] - df["EMA20"]) / df["EMA20"]
     df["EMA60_div"] = (df["close"] - df["EMA60"]) / df["EMA60"]
 
-    # MACD
     df["EMA12"] = df["close"].ewm(span=12).mean()
     df["EMA26"] = df["close"].ewm(span=26).mean()
     df["MACD"] = df["EMA12"] - df["EMA26"]
     df["MACD_signal"] = df["MACD"].ewm(span=9).mean()
     df["MACD_diff"] = df["MACD"] - df["MACD_signal"]
 
-    # RSI
     diff = df["close"].diff()
     gain = diff.clip(lower=0)
     loss = -diff.clip(upper=0)
@@ -391,25 +424,29 @@ def add_technical_features(df):
     avg_loss = loss.rolling(14).mean()
     rs = avg_gain / avg_loss
     df["RSI"] = 100 - (100 / (1 + rs))
-
-    # RSI変化量
     df["RSI_delta"] = df["RSI"].diff()
 
     return df
 
+
+
+# ============================================================
+# main
+# ============================================================
 def main():
-    parser = argparse.ArgumentParser(description="テクニカル分析モデルの保存と予測")
-    parser.add_argument("action", choices=["save", "predict"], help="実行する処理")
-    parser.add_argument("type", type=int, help="タイプ")
-    parser.add_argument("--date-idx", nargs="*", type=int, default=None, help="予測対象の dateIdx を指定する。未指定時は全行を対象にする")
-    parser.add_argument("--output-dir",default=None,help="predict時の出力先フォルダ（省略時: TechnicalScore/predicted）")
-    parser.add_argument("--model-dir",default=".",help="モデルファイルのフォルダ（省略時: カレントフォルダ）")
+    parser = argparse.ArgumentParser(description="高速化版テクニカル予測")
+    parser.add_argument("action", choices=["save", "predict"])
+    parser.add_argument("type", type=int)
+    parser.add_argument("--date-idx", nargs="*", type=int, default=None)
+    parser.add_argument("--output-dir", default=None)
+    parser.add_argument("--prediction-dir", default=None)
+    parser.add_argument("--model-dir", default=".")
     args = parser.parse_args()
 
     if args.action == "save":
-        saveModel(args.type)
+        saveModel(args.type, args.prediction_dir)
     else:
-        predict_all(args.type, args.output_dir, args.model_dir, date_idx=args.date_idx)
+        predict_all(args.type, args.output_dir, args.model_dir, args.date_idx)
 
 
 if __name__ == "__main__":
