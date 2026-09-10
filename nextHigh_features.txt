@@ -14,6 +14,7 @@ AverageMACDHistogram
 TrendSlope
 VolumeTrendStrength
 DemandSupplyScore
+BreakoutReliability
 BigDown
 GapDown
 LowerWick
@@ -23,13 +24,8 @@ SalesYoY
 EpsYoY
 ROC5
 ROC10
-EMA5
-EMA20
-EMA60
 EMA5_div
-EMA20_div
 EMA60_div
-MACD_diff
 RSI_delta
 yearLowest
 yearHighest

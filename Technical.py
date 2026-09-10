@@ -8,6 +8,7 @@ import numpy as np
 
 # === 設定 ===
 TECHNICAL_SCORE_GLOB = "C:/Users/ojiro/Documents/KabuCSharp/KabuCSharp/KabuCSharp/csv/Debug/TechnicalScore/*.csv"
+TECHNICAL_PREDICT_GLOB = "C:/Users/ojiro/Documents/KabuCSharp/KabuCSharp/KabuCSharp/csv/Debug/TechnicalPredict"
 MODEL_BASE = "C:/Users/ojiro/Documents/PythonFolder/KabuPython"
 
 ALL_FEATURES = [
@@ -24,12 +25,13 @@ ALL_FEATURES = [
     "MACD_diff", "RSI_delta", "open","high", "low", "yearLowest", "yearHighest", "monthLowest", "monthHighest",
     "secondMonthHigh", "secondMonthLow", "bunsanLowM", "bunsanHighM", "bunsanLowW", "bunsanHighW",
     "bunsanLowD", "bunsanHighD", "lowHosyou", "highHosyou",
+    "upperWick", "lowerWick", "bodySize", "range", "highDistance", "lowDistance",
 ]
 
 # 最終予測のpredicted_benefitのために追加する特徴量
 PRED_FEATURES = [
     "predicted_futureStability","predicted_futureUp","predicted_futureFall",
-    "predicted_nextHigh","predicted_nextLow",
+    "predicted_nextHighRatio","predicted_nextLowRatio",
 ]
 
 # ============================================================
@@ -50,9 +52,9 @@ def saveModel(type, prediction_dir=None):
     all_df = pd.concat(dfs, ignore_index=True)
     if type == 2:
         all_df = attach_prediction_features(all_df, files, prediction_dir)
-    all_df = all_df.replace(-99, pd.NA)
 
-    targets = ["futureStability", "futureUp", "futureFall","nextHigh", "nextLow"]
+    targets = ["futureStability", "futureUp", "futureFall","nextHighRatio", "nextLowRatio"]
+    #targets = ["nextHighRatio", "nextLowRatio"]
     if type == 2:
         targets = ["futureBenefit"]
 
@@ -173,6 +175,9 @@ def saveModel(type, prediction_dir=None):
         print(f"[{t}] Top 20% Hit Rate:    {top_hit_rate:.4f}")
         print(f"[{t}] Bottom 20% Hit Rate: {bottom_hit_rate:.4f}")
 
+        mae = np.mean(np.abs(pred_eval - y_eval))
+        print(f"[{t}] MAE: {mae:.4f}  →  誤差率: {mae * 100:.2f}%")
+
         #特徴量重要度を表示するコード（追加推奨）
         importance = model.feature_importance()
         feature_names = model.feature_name()
@@ -188,12 +193,12 @@ def saveModel(type, prediction_dir=None):
 def attach_prediction_features(all_df, technical_files, prediction_dir=None):
     """予測出力CSVから type==2 用の予測特徴量を元データへ結合する。"""
     if prediction_dir is None:
-        prediction_dir = Path(technical_files[0]).parent / "daily_predicted"
+        prediction_dir = Path(TECHNICAL_PREDICT_GLOB)
     else:
         prediction_dir = Path(prediction_dir)
 
     prediction_files = [
-        prediction_dir / f"{Path(technical_file).stem}_pred.csv"
+        prediction_dir / f"{Path(technical_file).stem}.csv"
         for technical_file in technical_files
     ]
     existing_files = [path for path in prediction_files if path.exists()]
@@ -219,6 +224,7 @@ def attach_prediction_features(all_df, technical_files, prediction_dir=None):
 # ============================================================
 # 特徴量選択
 # ============================================================
+
 def auto_feature_selection(all_df, target_name, base_features, threshold_ratio=0.01, is_classification=False):
     X = all_df[base_features].apply(pd.to_numeric, errors="coerce")
     y = all_df[target_name].apply(pd.to_numeric, errors="coerce")
@@ -272,15 +278,31 @@ def predict_all(type, output_dir=None, model_dir=".", date_idx=None):
         raise FileNotFoundError("予測対象CSVがありません")
 
     if output_dir is None:
-        output_dir = Path(files[0]).parent / "daily_predicted"
+        output_dir = Path(TECHNICAL_PREDICT_GLOB)
     else:
         output_dir = Path(output_dir)
     output_dir.mkdir(parents=True, exist_ok=True)
-    models, features = load_models(type)
 
+
+    isSaikai = False # 途中から再開する場合は True にする
+    if isSaikai:
+        # 既に処理済みの symbol を取得
+        done_symbols = {
+            Path(f).stem.replace("_pred", "")
+            for f in glob.glob(str(output_dir / "*.csv"))
+        }
+        # 未処理の input_csv のみ残す
+        files = [
+            f for f in files
+            if Path(f).stem not in done_symbols
+        ]
+        print("再開対象:", [Path(f).stem for f in files])
+
+
+    models, features = load_models(type)
     output_paths = []
     for input_csv in files:
-        output_csv = output_dir / (Path(input_csv).stem + "_pred.csv")
+        output_csv = output_dir / (Path(input_csv).stem + ".csv")
         result = predict_and_save(type, input_csv, output_csv, models, features, date_idx)
         if result is not None:
             output_paths.append(result)
@@ -290,7 +312,7 @@ def predict_all(type, output_dir=None, model_dir=".", date_idx=None):
 # モデルロード（高速化）
 # ============================================================
 def load_models(type):
-    targets = ["futureStability", "futureUp", "futureFall", "nextHigh", "nextLow"]
+    targets = ["futureStability", "futureUp", "futureFall", "nextHighRatio", "nextLowRatio"]
     if type == 2:
         targets.append("futureBenefit")
     models = {}
@@ -318,7 +340,8 @@ def predict_and_save(type, input_csv, output_csv, models, features, date_idx=Non
         return None
 
     results = []
-    targets = ["futureStability", "futureUp", "futureFall", "nextHigh", "nextLow"]
+    #targets = ["futureStability", "futureUp", "futureFall", "nextHighRatio", "nextLowRatio"]
+    targets = ["nextHighRatio", "nextLowRatio"]    
     if type == 2:
         targets.append("futureBenefit")
 
@@ -346,9 +369,8 @@ def predict_and_save(type, input_csv, output_csv, models, features, date_idx=Non
             prediction_key = f"predicted_{t}"
             if type == 2 and t != "futureBenefit" and pd.notna(row_values.get(prediction_key)):
                 predicted_value = float(row_values[prediction_key])
-                if predicted_value != -99:
-                    row_result[prediction_key] = predicted_value
-                    continue
+                row_result[prediction_key] = predicted_value
+                continue
 
             missing_features = [
                 feature for feature in selected_features if feature not in row_values
@@ -358,11 +380,11 @@ def predict_and_save(type, input_csv, output_csv, models, features, date_idx=Non
                     f"{t} の予測に必要な特徴量がありません: {missing_features}"
                 )
             feature_data = pd.DataFrame(
-                [{feature: row_values[feature] for feature in selected_features}
-            ]).astype(float)
+                [{feature: float(row_values[feature]) for feature in selected_features}
+            ])
             pred = model.predict(feature_data)
 
-            if type == 2 and t == "futureBenefit":
+            if t == "futureBenefit":
                 pred = pred.argmax(axis=1) + 1 # 1から始まるクラスラベルに変換
 
             predicted_value = float(pred[0])
@@ -397,22 +419,28 @@ def add_technical_features(df, isAllDate=False):
     if isAllDate:
         df = df.copy()
     else:
-        df = df.tail(70).copy()
+        df = df.copy()
+        #df = df.tail(70).copy()
+    df = df.sort_values("dateIdx").copy()
+    for col in df.columns:
+        df[col] = pd.to_numeric(df[col], errors="coerce")
+  
+    df = df.replace(-99, np.nan)
 
     df["ROC5"] = df["close"].pct_change(5)
     df["ROC10"] = df["close"].pct_change(10)
     df["ROC20"] = df["close"].pct_change(20)
 
-    df["EMA5"] = df["close"].ewm(span=5).mean()
-    df["EMA20"] = df["close"].ewm(span=20).mean()
-    df["EMA60"] = df["close"].ewm(span=60).mean()
+    df["EMA5"] = df["close"].ewm(span=5, adjust=False).mean()
+    df["EMA20"] = df["close"].ewm(span=20, adjust=False).mean()
+    df["EMA60"] = df["close"].ewm(span=60, adjust=False).mean()
 
     df["EMA5_div"] = (df["close"] - df["EMA5"]) / df["EMA5"]
     df["EMA20_div"] = (df["close"] - df["EMA20"]) / df["EMA20"]
     df["EMA60_div"] = (df["close"] - df["EMA60"]) / df["EMA60"]
 
-    df["EMA12"] = df["close"].ewm(span=12).mean()
-    df["EMA26"] = df["close"].ewm(span=26).mean()
+    df["EMA12"] = df["close"].ewm(span=12, adjust=False).mean()
+    df["EMA26"] = df["close"].ewm(span=26, adjust=False).mean()
     df["MACD"] = df["EMA12"] - df["EMA26"]
     df["MACD_signal"] = df["MACD"].ewm(span=9).mean()
     df["MACD_diff"] = df["MACD"] - df["MACD_signal"]

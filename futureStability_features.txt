@@ -3,7 +3,6 @@ HistoricalVorality
 RollingStd20
 RollingStd60
 ATR
-BollingerBand
 RangeRatio
 VolRollingStd
 AverageRSI
@@ -16,16 +15,12 @@ LowerWick
 VolumeBasedRisk
 SalesYoY
 EpsYoY
-ShrtPosShares
 SLRatio
-ROC5
-ROC10
-ROC20
+EMA5
+EMA20
 EMA60
-EMA5_div
 EMA60_div
 MACD_diff
 yearLowest
 yearHighest
-monthLowest
-monthHighest
+range
