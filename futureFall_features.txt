@@ -11,9 +11,9 @@ GapDown
 SalesYoY
 EpsYoY
 SLRatio
-EMA5
 EMA20
 EMA60
 EMA60_div
 yearLowest
 yearHighest
+nextOpenRatio

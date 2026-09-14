@@ -16,11 +16,13 @@ VolumeBasedRisk
 SalesYoY
 EpsYoY
 SLRatio
-EMA5
+ROC10
 EMA20
 EMA60
 EMA60_div
 MACD_diff
 yearLowest
 yearHighest
+monthLowest
 range
+nextOpenRatio

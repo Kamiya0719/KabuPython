@@ -26,6 +26,7 @@ ALL_FEATURES = [
     "secondMonthHigh", "secondMonthLow", "bunsanLowM", "bunsanHighM", "bunsanLowW", "bunsanHighW",
     "bunsanLowD", "bunsanHighD", "lowHosyou", "highHosyou",
     "upperWick", "lowerWick", "bodySize", "range", "highDistance", "lowDistance",
+    "nextOpenRatio",
 ]
 
 # 最終予測のpredicted_benefitのために追加する特徴量
@@ -53,19 +54,27 @@ def saveModel(type, prediction_dir=None):
     if type == 2:
         all_df = attach_prediction_features(all_df, files, prediction_dir)
 
-    targets = ["futureStability", "futureUp", "futureFall","nextHighRatio", "nextLowRatio"]
-    #targets = ["nextHighRatio", "nextLowRatio"]
+    #targets = ["futureStability", "futureUp", "futureFall","nextHighRatio", "nextLowRatio"]
+    targets = ["nextHighRatio"]
     if type == 2:
         targets = ["futureBenefit"]
 
 
     for t in targets:
+        training_df = all_df
+        if t == "nextHighRatio":
+            if "filterType" not in all_df.columns:
+                raise ValueError("nextHighRatio の学習に必要な filterType 列がありません")
+            training_df = all_df[all_df["filterType"] == 1].copy()
+            if training_df.empty:
+                raise ValueError("filterType が 1 の nextHighRatio 学習データがありません")
+
         base_features = ALL_FEATURES.copy()
         if t == "futureBenefit":
             base_features += PRED_FEATURES
         is_classification = t == "futureBenefit"
         selected = auto_feature_selection(
-            all_df, t, base_features, threshold_ratio=0.01,
+            training_df, t, base_features, threshold_ratio=0.01,
             is_classification=is_classification
         )
 
@@ -75,8 +84,8 @@ def saveModel(type, prediction_dir=None):
                 f.write(feat + "\n")
 
         # 自動選択された特徴量で再学習
-        X = all_df[selected].apply(pd.to_numeric, errors="coerce")
-        y = all_df[t].apply(pd.to_numeric, errors="coerce")
+        X = training_df[selected].apply(pd.to_numeric, errors="coerce")
+        y = training_df[t].apply(pd.to_numeric, errors="coerce")
         if is_classification:
             y = y.astype("category").cat.codes.astype("float32")
             valid_labels = y.notna() & y.ge(0)
@@ -340,13 +349,14 @@ def predict_and_save(type, input_csv, output_csv, models, features, date_idx=Non
         return None
 
     results = []
-    #targets = ["futureStability", "futureUp", "futureFall", "nextHighRatio", "nextLowRatio"]
-    targets = ["nextHighRatio", "nextLowRatio"]    
+    targets = ["futureStability", "futureUp", "futureFall", "nextHighRatio", "nextLowRatio"]
+    oneTarget = "nextHighRatio"
     if type == 2:
+        oneTarget = "futureBenefit"
         targets.append("futureBenefit")
 
     previous_predictions = None
-    if type == 2 and Path(output_csv).exists():
+    if Path(output_csv).exists():
         previous_predictions = pd.read_csv(output_csv).set_index("dateIdx")
 
     # 各日付で処理を行う
@@ -367,7 +377,7 @@ def predict_and_save(type, input_csv, output_csv, models, features, date_idx=Non
             selected_features = features[t]
 
             prediction_key = f"predicted_{t}"
-            if type == 2 and t != "futureBenefit" and pd.notna(row_values.get(prediction_key)):
+            if oneTarget != "" and t != oneTarget and pd.notna(row_values.get(prediction_key)):
                 predicted_value = float(row_values[prediction_key])
                 row_result[prediction_key] = predicted_value
                 continue
@@ -423,8 +433,11 @@ def add_technical_features(df, isAllDate=False):
         #df = df.tail(70).copy()
     df = df.sort_values("dateIdx").copy()
     for col in df.columns:
-        df[col] = pd.to_numeric(df[col], errors="coerce")
-  
+        if col not in ["symbol", "dateIdx"]:
+            df[col] = pd.to_numeric(df[col], errors="coerce")
+    df["symbol"] = df["symbol"].astype(str)
+    df["dateIdx"] = pd.to_numeric(df["dateIdx"], errors="coerce").astype("int32")
+
     df = df.replace(-99, np.nan)
 
     df["ROC5"] = df["close"].pct_change(5)
