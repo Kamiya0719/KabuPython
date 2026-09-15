@@ -1,8 +1,6 @@
 dateIdx
-HistoricalVorality
 RollingStd60
 ATR
-BollingerBand
 RangeRatio
 VolRollingStd
 VolumeROC
@@ -19,9 +17,16 @@ VolumeBasedRisk
 SalesYoY
 EpsYoY
 MarginBalanceRatio
+ShrtPosToSO
+ShortSaleChange
+ShrtPosShares
+ShortMarginChange
+LongMarginChange
+OutChgRatio
 ROC5
 ROC10
 ROC20
+EMA60
 EMA5_div
 EMA60_div
 MACD_diff
@@ -29,10 +34,8 @@ RSI_delta
 yearLowest
 yearHighest
 monthLowest
-monthHighest
 secondMonthLow
 bunsanLowW
-bunsanHighW
 bunsanLowD
 bunsanHighD
 lowHosyou

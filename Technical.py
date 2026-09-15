@@ -72,7 +72,7 @@ def saveModel(type, prediction_dir=None):
         base_features = ALL_FEATURES.copy()
         if t == "futureBenefit":
             base_features += PRED_FEATURES
-        is_classification = t == "futureBenefit"
+        is_classification = False #t == "futureBenefit"
         selected = auto_feature_selection(
             training_df, t, base_features, threshold_ratio=0.01,
             is_classification=is_classification
@@ -112,6 +112,7 @@ def saveModel(type, prediction_dir=None):
             "feature_fraction": 0.8,
             "bagging_fraction": 0.8,
             "bagging_freq": 1,
+            #"max_bin": 63,
         }
         if is_classification:
             params["num_class"] = int(y.max()) + 1
@@ -166,9 +167,9 @@ def saveModel(type, prediction_dir=None):
         # --- 上位25%・下位25% の閾値 ---
         top_q = 0.75
         bottom_q = 0.25
-        if t == "futureBenefit":
-            top_q = 0.97
-            bottom_q = 0.86
+        #if t == "futureBenefit":
+            #top_q = 0.97
+            #bottom_q = 0.86
         y_top_thr = np.quantile(y_eval, top_q)
         y_bottom_thr = np.quantile(y_eval, bottom_q)
         pred_top_thr = np.quantile(pred_eval, top_q)
@@ -235,8 +236,8 @@ def attach_prediction_features(all_df, technical_files, prediction_dir=None):
 # ============================================================
 
 def auto_feature_selection(all_df, target_name, base_features, threshold_ratio=0.01, is_classification=False):
-    X = all_df[base_features].apply(pd.to_numeric, errors="coerce")
-    y = all_df[target_name].apply(pd.to_numeric, errors="coerce")
+    X = all_df[base_features].apply(pd.to_numeric, errors="coerce").astype("float32")
+    y = all_df[target_name].apply(pd.to_numeric, errors="coerce").astype("float32")
     if is_classification:
         y = y.astype("category").cat.codes.astype("float32")
         valid_labels = y.notna() & y.ge(0)
@@ -256,6 +257,7 @@ def auto_feature_selection(all_df, target_name, base_features, threshold_ratio=0
             "feature_fraction": 0.8,
             "bagging_fraction": 0.8,
             "bagging_freq": 1,
+            #"max_bin": 63,
             **({"num_class": int(y.max()) + 1} if is_classification else {})
         },
         lgb.Dataset(X_train, label=y_train),
@@ -394,8 +396,8 @@ def predict_and_save(type, input_csv, output_csv, models, features, date_idx=Non
             ])
             pred = model.predict(feature_data)
 
-            if t == "futureBenefit":
-                pred = pred.argmax(axis=1) + 1 # 1から始まるクラスラベルに変換
+            #if t == "futureBenefit":
+            #    pred = pred.argmax(axis=1) + 1 # 1から始まるクラスラベルに変換
 
             predicted_value = float(pred[0])
             row_values[prediction_key] = predicted_value
