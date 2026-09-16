@@ -1,7 +1,6 @@
 dateIdx
 RollingStd60
 ATR
-RangeRatio
 VolRollingStd
 VolumeROC
 AverageRSI
@@ -18,11 +17,10 @@ SalesYoY
 EpsYoY
 MarginBalanceRatio
 ShrtPosToSO
-ShortSaleChange
 ShrtPosShares
 ShortMarginChange
 LongMarginChange
-OutChgRatio
+SLRatio
 ROC5
 ROC10
 ROC20
@@ -34,8 +32,11 @@ RSI_delta
 yearLowest
 yearHighest
 monthLowest
+monthHighest
+secondMonthHigh
 secondMonthLow
 bunsanLowW
+bunsanHighW
 bunsanLowD
 bunsanHighD
 lowHosyou
@@ -43,7 +44,6 @@ highHosyou
 upperWick
 lowerWick
 bodySize
-range
 highDistance
 lowDistance
 nextOpenRatio

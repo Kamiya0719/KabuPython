@@ -2,8 +2,8 @@ dateIdx
 RollingStd60
 ATR
 VolRollingStd
-VolumeROC
 TrendSlope
+VolumeTrendStrength
 DemandSupplyScore
 BreakoutReliability
 GapDown
@@ -15,6 +15,7 @@ EpsYoY
 MarginBalanceRatio
 IssType
 ROC5
+ROC10
 MACD_diff
 RSI_delta
 yearLowest

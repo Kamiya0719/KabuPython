@@ -4,7 +4,6 @@ ATR
 VolRollingStd
 VolumeROC
 AverageRSI
-AverageMACDHistogram
 TrendSlope
 VolumeTrendStrength
 DemandSupplyScore
@@ -17,7 +16,6 @@ SalesYoY
 EpsYoY
 PER
 MarketCap
-MarginBalanceRatio
 ROC5
 EMA60
 EMA60_div

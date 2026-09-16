@@ -1,9 +1,7 @@
 dateIdx
 HistoricalVorality
-RollingStd20
 RollingStd60
 ATR
-RangeRatio
 VolRollingStd
 AverageRSI
 AverageMACDHistogram
@@ -16,7 +14,6 @@ VolumeBasedRisk
 SalesYoY
 EpsYoY
 SLRatio
-ROC10
 EMA20
 EMA60
 EMA60_div
