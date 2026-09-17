@@ -54,43 +54,45 @@ def saveModel(type, prediction_dir=None):
     if type == 2:
         all_df = attach_prediction_features(all_df, files, prediction_dir)
 
-    targets = ["futureStability", "futureUp", "futureFall","nextHighRatio", "nextLowRatio"]
+    targets = ["futureStability", "futureUp", "futureFall","nextHighRatio","nextHighRatioFilter", "nextLowRatio"]
     #targets = ["nextHighRatio"]
     if type == 2:
         targets = ["futureBenefit"]
 
 
-    for t in targets:
+    for target in targets:
         training_df = all_df
-        if t == "nextHighRatio":
+        targetCol = target
+        if target == "nextHighRatioFilter":
             if "filterType" not in all_df.columns:
                 raise ValueError("nextHighRatio の学習に必要な filterType 列がありません")
             training_df = all_df[all_df["filterType"] == 1].copy()
             if training_df.empty:
                 raise ValueError("filterType が 1 の nextHighRatio 学習データがありません")
+            targetCol = "nextHighRatio"
 
-        target_values = pd.to_numeric(training_df[t], errors="coerce")
+        target_values = pd.to_numeric(training_df[targetCol], errors="coerce")
         training_df = training_df.loc[target_values.notna()].copy()
         if training_df.empty:
-            raise ValueError(f"{t} の目的変数が有効な学習データがありません")
+            raise ValueError(f"{target} の目的変数が有効な学習データがありません")
 
         base_features = ALL_FEATURES.copy()
-        if t == "futureBenefit":
+        if target == "futureBenefit":
             base_features += PRED_FEATURES
         is_classification = False #t == "futureBenefit"
         selected = auto_feature_selection(
-            training_df, t, base_features, threshold_ratio=0.01,
+            training_df, targetCol, base_features, threshold_ratio=0.01,
             is_classification=is_classification
         )
 
         # 追加：特徴量リストを保存
-        with open(f"{MODEL_BASE}/{t}_features.txt", "w") as f:
+        with open(f"{MODEL_BASE}/{target}_features.txt", "w") as f:
             for feat in selected:
                 f.write(feat + "\n")
 
         # 自動選択された特徴量で再学習
         X = training_df[selected].apply(pd.to_numeric, errors="coerce")
-        y = training_df[t].apply(pd.to_numeric, errors="coerce")
+        y = training_df[targetCol].apply(pd.to_numeric, errors="coerce")
         if is_classification:
             y = y.astype("category").cat.codes.astype("float32")
             valid_labels = y.notna() & y.ge(0)
@@ -99,7 +101,7 @@ def saveModel(type, prediction_dir=None):
 
         # --- 追加：目的変数の分布を表示 ---
         y_desc = y.describe()
-        print(f"[{t}] Target Distribution")
+        print(f"[{target}] Target Distribution")
         print(f" min: {y_desc['min']}, max: {y_desc['max']}, mean: {y_desc['mean']}, std: {y_desc['std']}")
 
         X_train, X_valid, y_train, y_valid = train_test_split(
@@ -134,15 +136,15 @@ def saveModel(type, prediction_dir=None):
         if is_classification:
             train_loss = model.best_score["train"]["multi_logloss"]
             valid_loss = model.best_score["valid"]["multi_logloss"]
-            print(f"[{t}] train logloss: {train_loss:.6f}, valid logloss: {valid_loss:.6f}, best iteration: {model.best_iteration}")
+            print(f"[{target}] train logloss: {train_loss:.6f}, valid logloss: {valid_loss:.6f}, best iteration: {model.best_iteration}")
         else:
             train_rmse = model.best_score["train"]["rmse"]
             valid_rmse = model.best_score["valid"]["rmse"]
 
             # --- 追加：RMSE の評価 ---
             rmse_ratio = valid_rmse / y_desc["std"]
-            print(f"[{t}] train RMSE: {train_rmse:.6f}, valid RMSE: {valid_rmse:.6f}, best iteration: {model.best_iteration}")
-            print(f"[{t}] RMSE/std: {rmse_ratio:.4f}  →  評価: ", end="")
+            print(f"[{target}] train RMSE: {train_rmse:.6f}, valid RMSE: {valid_rmse:.6f}, best iteration: {model.best_iteration}")
+            print(f"[{target}] RMSE/std: {rmse_ratio:.4f}  →  評価: ", end="")
             if rmse_ratio < 0.3:
                 print("非常に良い（高い汎化性能）")
             elif rmse_ratio < 0.5:
@@ -165,8 +167,8 @@ def saveModel(type, prediction_dir=None):
         pred_eval = pred[eval_mask]
 
         if len(y_eval) == 0:
-            print(f"[{t}] Hit Rate: N/A (評価可能なデータがありません)")
-            model.save_model(f"{MODEL_BASE}/{t}model.txt")
+            print(f"[{target}] Hit Rate: N/A (評価可能なデータがありません)")
+            model.save_model(f"{MODEL_BASE}/{target}model.txt")
             continue
 
         # --- 上位25%・下位25% の閾値 ---
@@ -187,22 +189,22 @@ def saveModel(type, prediction_dir=None):
         # --- 一致率（Hit Rate） ---
         top_hit_rate = len(y_top_idx & pred_top_idx) / len(y_top_idx) if y_top_idx else float("nan")
         bottom_hit_rate = len(y_bottom_idx & pred_bottom_idx) / len(y_bottom_idx) if y_bottom_idx else float("nan")
-        print(f"[{t}] Top 20% Hit Rate:    {top_hit_rate:.4f}")
-        print(f"[{t}] Bottom 20% Hit Rate: {bottom_hit_rate:.4f}")
+        print(f"[{target}] Top 20% Hit Rate:    {top_hit_rate:.4f}")
+        print(f"[{target}] Bottom 20% Hit Rate: {bottom_hit_rate:.4f}")
 
         mae = np.mean(np.abs(pred_eval - y_eval))
-        print(f"[{t}] MAE: {mae:.4f}  →  誤差率: {mae * 100:.2f}%")
+        print(f"[{target}] MAE: {mae:.4f}  →  誤差率: {mae * 100:.2f}%")
 
         #特徴量重要度を表示するコード（追加推奨）
         importance = model.feature_importance()
         feature_names = model.feature_name()
-        disp = f"[{t}] Feature Importance"
+        disp = f"[{target}] Feature Importance"
         for name, imp in sorted(zip(feature_names, importance), key=lambda x: -x[1]):
             disp += f"  {name}: {imp}"
         print(disp + f"\n\n")
 
 
-        model.save_model(f"{MODEL_BASE}/{t}model.txt")
+        model.save_model(f"{MODEL_BASE}/{target}model.txt")
 
 
 def attach_prediction_features(all_df, technical_files, prediction_dir=None):
@@ -240,9 +242,9 @@ def attach_prediction_features(all_df, technical_files, prediction_dir=None):
 # 特徴量選択
 # ============================================================
 
-def auto_feature_selection(all_df, target_name, base_features, threshold_ratio=0.01, is_classification=False):
+def auto_feature_selection(all_df, targetCol, base_features, threshold_ratio=0.01, is_classification=False):
     X = all_df[base_features].apply(pd.to_numeric, errors="coerce").astype("float32")
-    y = all_df[target_name].apply(pd.to_numeric, errors="coerce").astype("float32")
+    y = all_df[targetCol].apply(pd.to_numeric, errors="coerce").astype("float32")
     valid_targets = y.notna()
     X = X.loc[valid_targets]
     y = y.loc[valid_targets]
@@ -331,15 +333,15 @@ def predict_all(type, output_dir=None, model_dir=".", date_idx=None):
 # モデルロード（高速化）
 # ============================================================
 def load_models(type):
-    targets = ["futureStability", "futureUp", "futureFall", "nextHighRatio", "nextLowRatio"]
+    targets = ["futureStability", "futureUp", "futureFall", "nextHighRatio","nextHighRatioFilter", "nextLowRatio"]
     if type == 2:
         targets.append("futureBenefit")
     models = {}
     features = {}
-    for t in targets:
-        models[t] = lgb.Booster(model_file=str(Path(MODEL_BASE) / f"{t}model.txt"))
-        with open(Path(MODEL_BASE) / f"{t}_features.txt") as f:
-            features[t] = [line.strip() for line in f.readlines()]
+    for target in targets:
+        models[target] = lgb.Booster(model_file=str(Path(MODEL_BASE) / f"{target}model.txt"))
+        with open(Path(MODEL_BASE) / f"{target}_features.txt") as f:
+            features[target] = [line.strip() for line in f.readlines()]
 
     return models, features
 
@@ -359,7 +361,7 @@ def predict_and_save(type, input_csv, output_csv, models, features, date_idx=Non
         return None
 
     results = []
-    targets = ["futureStability", "futureUp", "futureFall", "nextHighRatio", "nextLowRatio"]
+    targets = ["futureStability", "futureUp", "futureFall", "nextHighRatio","nextHighRatioFilter", "nextLowRatio"]
     oneTarget = ""
     if type == 2:
         oneTarget = "futureBenefit"
@@ -382,12 +384,12 @@ def predict_and_save(type, input_csv, output_csv, models, features, date_idx=Non
             "dateIdx": row["dateIdx"],
         }
 
-        for t in targets:
-            model = models[t]
-            selected_features = features[t]
+        for target in targets:
+            model = models[target]
+            selected_features = features[target]
 
-            prediction_key = f"predicted_{t}"
-            if oneTarget != "" and t != oneTarget and pd.notna(row_values.get(prediction_key)):
+            prediction_key = f"predicted_{target}"
+            if oneTarget != "" and target != oneTarget and pd.notna(row_values.get(prediction_key)):
                 predicted_value = float(row_values[prediction_key])
                 row_result[prediction_key] = predicted_value
                 continue
@@ -397,7 +399,7 @@ def predict_and_save(type, input_csv, output_csv, models, features, date_idx=Non
             ]
             if missing_features:
                 raise ValueError(
-                    f"{t} の予測に必要な特徴量がありません: {missing_features}"
+                    f"{target} の予測に必要な特徴量がありません: {missing_features}"
                 )
             feature_data = pd.DataFrame(
                 [{feature: float(row_values[feature]) for feature in selected_features}

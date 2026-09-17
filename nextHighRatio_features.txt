@@ -3,8 +3,6 @@ RollingStd60
 ATR
 VolRollingStd
 VolumeROC
-AverageRSI
-TrendSlope
 VolumeTrendStrength
 DemandSupplyScore
 BreakoutReliability
@@ -14,8 +12,7 @@ VolumeSpikeScore
 VolumeBasedRisk
 SalesYoY
 EpsYoY
-PER
-MarketCap
+ShortMarginChange
 ROC5
 EMA60
 EMA60_div
@@ -25,6 +22,7 @@ yearLowest
 yearHighest
 monthLowest
 monthHighest
+secondMonthHigh
 secondMonthLow
 bunsanLowW
 bunsanHighW
