@@ -5,6 +5,8 @@ import glob
 import argparse
 from pathlib import Path
 import numpy as np
+from sklearn.metrics import accuracy_score
+from sklearn.metrics import confusion_matrix
 
 # === 設定 ===
 TECHNICAL_SCORE_GLOB = "C:/Users/ojiro/Documents/KabuCSharp/KabuCSharp/KabuCSharp/csv/Debug/TechnicalScore/*.csv"
@@ -35,8 +37,15 @@ PRED_FEATURES = [
     "predicted_nextHighRatio","predicted_nextLowRatio",
 ]
 
+def _prepare_classification_target(series):
+    """futureBenefit のような -99 を除外した分類目標を 0..N-1 に正規化する。"""
+    values = pd.to_numeric(series, errors="coerce")
+    valid = values.isin([0, 1, 2, 3, 4])
+    return values.where(valid, np.nan).astype("float32")
+
+
 # ============================================================
-# saveModel
+# モデルの訓練と評価と保存
 # ============================================================
 def saveModel(type, prediction_dir=None):
     files = glob.glob(TECHNICAL_SCORE_GLOB)
@@ -52,6 +61,7 @@ def saveModel(type, prediction_dir=None):
 
     all_df = pd.concat(dfs, ignore_index=True)
     if type == 2:
+        # type==2 つまりfutureBenefitの推測の場合、通常学習用csvデータに、type=1各種の推測結果CSVデータを結合する
         all_df = attach_prediction_features(all_df, files, prediction_dir)
 
     targets = ["futureStability", "futureUp", "futureFall","nextHighRatio","nextHighRatioFilter", "nextLowRatio"]
@@ -63,6 +73,7 @@ def saveModel(type, prediction_dir=None):
     for target in targets:
         training_df = all_df
         targetCol = target
+        # フィルターあり高値推測では、filterType==1 のデータのみを学習に使う
         if target == "nextHighRatioFilter":
             if "filterType" not in all_df.columns:
                 raise ValueError("nextHighRatio の学習に必要な filterType 列がありません")
@@ -79,7 +90,7 @@ def saveModel(type, prediction_dir=None):
         base_features = ALL_FEATURES.copy()
         if target == "futureBenefit":
             base_features += PRED_FEATURES
-        is_classification = False #t == "futureBenefit"
+        is_classification = target == "futureBenefit"
         selected = auto_feature_selection(
             training_df, targetCol, base_features, threshold_ratio=0.01,
             is_classification=is_classification
@@ -94,8 +105,8 @@ def saveModel(type, prediction_dir=None):
         X = training_df[selected].apply(pd.to_numeric, errors="coerce")
         y = training_df[targetCol].apply(pd.to_numeric, errors="coerce")
         if is_classification:
-            y = y.astype("category").cat.codes.astype("float32")
-            valid_labels = y.notna() & y.ge(0)
+            y = _prepare_classification_target(y)
+            valid_labels = y.notna()
             X = X.loc[valid_labels]
             y = y.loc[valid_labels].astype("int32")
 
@@ -123,6 +134,7 @@ def saveModel(type, prediction_dir=None):
         }
         if is_classification:
             params["num_class"] = int(y.max()) + 1
+
 
         model = lgb.train(
             params,
@@ -195,6 +207,12 @@ def saveModel(type, prediction_dir=None):
         mae = np.mean(np.abs(pred_eval - y_eval))
         print(f"[{target}] MAE: {mae:.4f}  →  誤差率: {mae * 100:.2f}%")
 
+        if is_classification:
+            acc = accuracy_score(y_eval, pred_eval)
+            print(f"[{target}] Accuracy: {acc:.4f}")
+            print(confusion_matrix(y_eval, pred_eval))
+
+
         #特徴量重要度を表示するコード（追加推奨）
         importance = model.feature_importance()
         feature_names = model.feature_name()
@@ -206,7 +224,7 @@ def saveModel(type, prediction_dir=None):
 
         model.save_model(f"{MODEL_BASE}/{target}model.txt")
 
-
+# type==2 つまりfutureBenefitの推測の場合、通常学習用csvデータに、type=1各種の推測結果CSVデータを結合する
 def attach_prediction_features(all_df, technical_files, prediction_dir=None):
     """予測出力CSVから type==2 用の予測特徴量を元データへ結合する。"""
     if prediction_dir is None:
@@ -249,8 +267,8 @@ def auto_feature_selection(all_df, targetCol, base_features, threshold_ratio=0.0
     X = X.loc[valid_targets]
     y = y.loc[valid_targets]
     if is_classification:
-        y = y.astype("category").cat.codes.astype("float32")
-        valid_labels = y.notna() & y.ge(0)
+        y = _prepare_classification_target(y)
+        valid_labels = y.notna()
         X = X.loc[valid_labels]
         y = y.loc[valid_labels].astype("int32")
 
@@ -291,7 +309,7 @@ def select_features_by_importance(model, feature_names, threshold_ratio=0.01):
 
 
 # ============================================================
-# 全銘柄 predict（高速版）
+# 全銘柄・全日程推測
 # ============================================================
 def predict_all(type, output_dir=None, model_dir=".", date_idx=None):
     files = glob.glob(TECHNICAL_SCORE_GLOB)
@@ -346,7 +364,7 @@ def load_models(type):
     return models, features
 
 # ============================================================
-# predict（複数行保存）
+# predict_allの1CSV=1銘柄分の処理
 # ============================================================
 def predict_and_save(type, input_csv, output_csv, models, features, date_idx=None):
     df = pd.read_csv(input_csv) # technicalScore CSV を読み込む
@@ -405,11 +423,16 @@ def predict_and_save(type, input_csv, output_csv, models, features, date_idx=Non
                 [{feature: float(row_values[feature]) for feature in selected_features}
             ])
             pred = model.predict(feature_data)
+            pred_array = np.asarray(pred)
 
-            #if t == "futureBenefit":
-            #    pred = pred.argmax(axis=1) + 1 # 1から始まるクラスラベルに変換
+            if target == "futureBenefit":
+                if pred_array.ndim > 1:
+                    predicted_value = float(np.argmax(pred_array[0]))
+                else:
+                    predicted_value = float(np.round(pred_array[0]))
+            else:
+                predicted_value = float(pred_array[0])
 
-            predicted_value = float(pred[0])
             row_values[prediction_key] = predicted_value
             row_result[prediction_key] = predicted_value
 
@@ -435,7 +458,70 @@ def predict_and_save(type, input_csv, output_csv, models, features, date_idx=Non
 
 
 # ============================================================
-# テクニカル指標（直近70日）
+# 毎日やるデイリー推測（複数行保存）
+# ============================================================
+def predict_daily(model_dir=".", 
+                  input_csv=r"C:\Users\ojiro\Documents\KabuCSharp\KabuCSharp\KabuCSharp\csv\EveryDay\TechnicalScoreDaily.csv",
+                  output_csv=r"C:\Users\ojiro\Documents\KabuCSharp\KabuCSharp\KabuCSharp\csv\EveryDay\TechnicalPredictDaily.csv"):
+
+    # モデルロード
+    targets = ["futureStability", "futureUp", "futureFall", "nextHighRatio", "nextHighRatioFilter", "nextLowRatio", "futureBenefit"]
+
+    models = {}
+    features = {}
+    for target in targets:
+        models[target] = lgb.Booster(model_file=str(Path(MODEL_BASE) / f"{target}model.txt"))
+        with open(Path(MODEL_BASE) / f"{target}_features.txt") as f:
+            features[target] = [line.strip() for line in f.readlines()]
+
+    # 入力読み込み
+    df = pd.read_csv(input_csv, dtype={'symbol': str})
+    df = df.replace(-99, np.nan)
+
+    results = []
+    for _, row in df.iterrows():
+        row_dict = row.to_dict()
+        symbol = row_dict["symbol"]
+        dateIdx = row_dict["dateIdx"]
+        tmpOpenId = row_dict["tmpOpenId"]
+        close = row_dict["close"]
+
+        result_row = {
+            "symbol": symbol,
+            "dateIdx": dateIdx,
+            "tmpOpenId": tmpOpenId,
+            "close": close,
+        }
+
+        for target in targets:
+            selected_features = features[target]
+            # 必要な特徴量が揃っているかチェック
+            missing = [f for f in selected_features if f not in row_dict]
+            if missing:
+                raise ValueError(f"{target} に必要な特徴量が不足: {missing}")
+            feature_data = pd.DataFrame([{f: float(row_dict[f]) for f in selected_features}])
+            pred = models[target].predict(feature_data)
+            pred_array = np.asarray(pred)
+            if target == "futureBenefit":
+                if pred_array.ndim > 1:
+                    predicted_value = float(np.argmax(pred_array[0]))
+                else:
+                    predicted_value = float(np.round(pred_array[0]))
+            else:
+                predicted_value = float(pred_array[0])
+            result_row[f"predicted_{target}"] = predicted_value
+        results.append(result_row)
+
+    # 保存
+    out_df = pd.DataFrame(results)
+    out_df.to_csv(output_csv, index=False)
+
+    print(f"Daily prediction saved → {output_csv}")
+
+
+
+# ============================================================
+# csvの情報から追加計算で追記するテクニカル指標（直近70日）
 # ============================================================
 def add_technical_features(df, isAllDate=False):
     if isAllDate:
@@ -488,7 +574,7 @@ def add_technical_features(df, isAllDate=False):
 # ============================================================
 def main():
     parser = argparse.ArgumentParser(description="高速化版テクニカル予測")
-    parser.add_argument("action", choices=["save", "predict"])
+    parser.add_argument("action", choices=["save", "predict", "daily"])
     parser.add_argument("type", type=int)
     parser.add_argument("--date-idx", nargs="*", type=int, default=None)
     parser.add_argument("--output-dir", default=None)
@@ -498,9 +584,10 @@ def main():
 
     if args.action == "save":
         saveModel(args.type, args.prediction_dir)
-    else:
+    elif args.action == "predict":
         predict_all(args.type, args.output_dir, args.model_dir, args.date_idx)
-
+    else:
+        predict_daily()
 
 if __name__ == "__main__":
     main()
